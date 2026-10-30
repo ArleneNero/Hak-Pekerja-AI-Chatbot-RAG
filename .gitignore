@@ -1,0 +1,37 @@
+# Private local-only agent and documentation materials
+*.md
+*.mdx
+.agent-internal/
+docs/
+*.ipynb
+FILE_MANIFEST.json
+LOCAL_GIT_EXCLUDE.txt
+MULAI_DI_SINI.txt
+STATUS.txt
+# Secrets and service credentials
+.env
+.env.*
+!.env.example
+*service-account*.json
+*serviceAccountKey*.json
+*serviceAccount*.json
+*firebase-admin*.json
+MULAI_DI_SINI.txt
+*.pem
+*.key
+# Node, Python and build caches
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.tsbuildinfo
+# Local environment / tooling
+.DS_Store
+.idea/
+.vscode/
+# Do not assume .gitignore protects already tracked files.

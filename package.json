@@ -1,0 +1,10 @@
+{
+  "name": "hakpekerja-ai-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Directory-only scaffolding; actual scripts, deps and lockfile require B/A audit.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

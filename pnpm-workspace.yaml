@@ -1,0 +1,4 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+# Python in services/rag is intentionally outside the Node workspace.

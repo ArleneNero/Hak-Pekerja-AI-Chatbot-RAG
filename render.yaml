@@ -1,0 +1,111 @@
+# ==============================================================================
+# Render Blueprint Specification for HakPekerja.AI Monorepo
+# Documentation: https://render.com/docs/blueprint-spec
+# ==============================================================================
+services:
+  # ----------------------------------------------------------------------------
+  # 1. RAG Service (Private Service - Python FastAPI)
+  # Internal-only service; not directly exposed to the public internet
+  # ----------------------------------------------------------------------------
+  - type: pserv
+    name: hakpekerja-rag
+    runtime: python
+    rootDir: services/rag
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8001
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: HOST
+        value: 0.0.0.0
+      - key: ENVIRONMENT
+        value: production
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_COLLECTION
+        value: hakpekerja_legal_4b4babc70203
+      - key: CHAT_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: CHAT_API_KEY
+        sync: false
+      - key: CHAT_MODEL
+        value: meta-llama/llama-3.3-70b-instruct
+      - key: CHAT_FALLBACK_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: CHAT_FALLBACK_API_KEY
+        sync: false
+      - key: CHAT_FALLBACK_MODEL
+        value: meta-llama/llama-3.3-70b-instruct
+      - key: EMBEDDING_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: EMBEDDING_API_KEY
+        sync: false
+      - key: EMBEDDING_MODEL
+        value: baai/bge-m3
+      - key: VECTOR_DIM
+        value: 1024
+      - key: TOP_K
+        value: 7
+
+  # ----------------------------------------------------------------------------
+  # 2. Public API Gateway (Web Service - Node.js Express)
+  # Public endpoint for chat & history; connects internally to hakpekerja-rag
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: hakpekerja-api
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: RAG_SERVICE_URL
+        value: http://hakpekerja-rag:8001
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: FIREBASE_PROJECT_ID
+        value: hak-ketenagakerjaan-ai-5b1fc
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_KEY
+        sync: false
+
+  # ----------------------------------------------------------------------------
+  # 3. Frontend Web SPA (Static Site - React 19 + Vite)
+  # Globally distributed static web client
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: hakpekerja-web
+    runtime: static
+    rootDir: apps/web
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        value: hak-ketenagakerjaan-ai-5b1fc.firebaseapp.com
+      - key: VITE_FIREBASE_PROJECT_ID
+        value: hak-ketenagakerjaan-ai-5b1fc
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        value: hak-ketenagakerjaan-ai-5b1fc.firebasestorage.app
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        value: "582144669725"
+      - key: VITE_FIREBASE_APP_ID
+        value: "1:582144669725:web:da23da83527cfddbdfaef4"
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: hakpekerja-api
+          property: host
