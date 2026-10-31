@@ -15,15 +15,15 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   onSubmit,
 }) => {
   return (
-    <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 sm:pt-2 flex-shrink-0 bg-white/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t border-slate-200/60 sm:border-0 z-20">
+    <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 flex-shrink-0 bg-transparent border-0 z-20">
       <div className="max-w-4xl mx-auto">
-        <p className="text-center text-[10.5px] sm:text-xs text-figma-muted mb-1 select-none">
+        <p className="text-center text-[10.5px] sm:text-xs text-figma-muted mb-1.5 select-none">
           Informasi umum, bukan nasihat hukum profesional.
         </p>
 
         <form
           onSubmit={onSubmit}
-          className="flex items-center gap-2 bg-white border border-[#D5DFE9] rounded-2xl px-3 sm:px-4 py-1 sm:py-1.5 shadow-xs focus-within:border-[#285CF5] focus-within:ring-3 focus-within:ring-[#285CF5]/10 transition-all"
+          className="flex items-center gap-2 bg-white border border-[#D5DFE9] rounded-2xl px-3.5 sm:px-4 py-1.5 sm:py-2 shadow-xs focus-within:border-[#285CF5] focus-within:ring-3 focus-within:ring-[#285CF5]/10 transition-all"
         >
           <input
             type="text"

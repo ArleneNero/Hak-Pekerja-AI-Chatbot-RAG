@@ -9,8 +9,7 @@ import {
   Gift, 
   UserMinus, 
   ShieldAlert, 
-  ShieldCheck,
-  Sparkles
+  ShieldCheck
 } from 'lucide-react';
 import { EXAMPLE_QUESTIONS, LEGAL_TOPICS } from '../constants/figmaTokens';
 import { ROUTES } from '../constants/routes';
@@ -58,11 +57,6 @@ export const HomePage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-[#EDF3F9]/95 via-[#DFE8F0]/85 to-transparent sm:hidden pointer-events-none" />
 
         <div className="max-w-xl z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 border border-[#315BF4]/20 text-[#315BF4] text-[12px] font-bold mb-4 shadow-sm backdrop-blur-sm">
-            <Sparkles size={14} className="text-[#315BF4]" />
-            <span>Kecerdasan Buatan Berbasis Rujukan Regulasi Sah</span>
-          </div>
-
           <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-[#1A2952] leading-[1.18] tracking-tight">
             Tanya apa saja tentang <br />
             <span className="text-4xl sm:text-5xl lg:text-[48px] font-extrabold text-[#285CF5] block mt-1">

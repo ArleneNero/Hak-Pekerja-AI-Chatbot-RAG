@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, History, Scale, Plus, ShieldCheck, LogIn, UserPlus, Sparkles, LogOut } from 'lucide-react';
+import { Home, History, Scale, Plus, LogIn, UserPlus, Sparkles, LogOut } from 'lucide-react';
 import { type User } from 'firebase/auth';
 import { ROUTES } from '@/constants/routes';
 import type { AuthMode } from '@/features/account/AuthModal';
@@ -104,13 +104,6 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             </div>
           </div>
         )}
-        <div className="text-xs text-figma-muted">
-          <p className="flex items-center gap-1.5 font-medium mb-1">
-            <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
-            <span className="font-semibold text-slate-700">Berbasis 11 Regulasi Hukum Resmi</span>
-          </p>
-          <p className="text-[11px]">UU 6/2023, PP 35/2021, PP 36/2021, UU KIA 2024</p>
-        </div>
       </div>
     </div>
   );
