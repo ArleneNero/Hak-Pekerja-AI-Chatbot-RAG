@@ -47,13 +47,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       fetchRecent();
     };
 
+    const handleToggleDrawer = () => {
+      setMobileMenuOpen((prev) => !prev);
+    };
+
     window.addEventListener('hp_conversations_changed', handleUpdate);
     window.addEventListener('storage', handleUpdate);
+    window.addEventListener('hp_toggle_mobile_drawer', handleToggleDrawer);
 
     return () => {
       isMounted = false;
       window.removeEventListener('hp_conversations_changed', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('hp_toggle_mobile_drawer', handleToggleDrawer);
     };
   }, [user, getIdToken, location.pathname, location.search]);
 
@@ -87,7 +93,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {/* 2. Main Content Area */}
       <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden relative">
         {/* Mobile Topbar */}
-        <header className="md:hidden h-14 bg-white border-b border-figma-border px-4 flex items-center justify-between shrink-0 z-30">
+        <header className="md:hidden h-14 bg-white border-b border-figma-border px-4 flex items-center justify-between shrink-0 z-50">
           <div 
             onClick={() => navigate(ROUTES.HOME)} 
             className="flex items-center gap-2.5 cursor-pointer active:opacity-80 transition-opacity"
