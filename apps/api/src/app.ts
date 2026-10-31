@@ -32,13 +32,14 @@ export const createApp = (): Application => {
   app.use(express.json({ limit: '1mb' }));
   app.use(requestIdMiddleware);
 
-  // Mount API v1 router
+  // Mount API v1 router on both /api/v1 (standard) and /v1 (when /api prefix is stripped)
   const apiRouter = express.Router();
   apiRouter.use(healthRouter);
   apiRouter.use(chatRouter);
   apiRouter.use(conversationRouter);
 
   app.use('/api/v1', apiRouter);
+  app.use('/v1', apiRouter);
 
   // 404 Not Found handler
   app.use((req: Request, res: Response) => {
