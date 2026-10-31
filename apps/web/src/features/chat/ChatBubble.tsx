@@ -5,7 +5,7 @@ import { ChatStatusBadge } from './ChatStatusBadge';
 
 interface ChatBubbleProps {
   message: ChatMessage;
-  onOpenSources: (sources?: LegalSource[]) => void;
+  onOpenSources: (sources?: LegalSource[], highlightedLabel?: string) => void;
   onRetry?: () => void;
 }
 
@@ -54,20 +54,22 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
     // Pecah berdasarkan: sitasi [S1], markdown link [text](url)
     const parts = content.split(/(\[(?:Rujukan|S)\s*\d+[^\]]*\]|\[[^\]]+\]\(https?:\/\/[^\s\)]+\))/g);
     return parts.map((part, index) => {
-      // 1. Cek Sitasi Rujukan Hukum Resmi
+      // 1. Cek Sitasi Rujukan Hukum Resmi (Ubah format teknis [S1] menjadi [Rujukan 1])
       const citationMatch = part.match(/^\[((?:Rujukan|S)\s*\d+)([^\]]*)\]$/);
       if (citationMatch) {
-        const label = citationMatch[1];
+        const rawLabel = citationMatch[1];
         const extra = citationMatch[2];
+        const friendlyLabel = rawLabel.replace(/^S(\d+)$/i, 'Rujukan $1');
         return (
           <button
             key={index}
             type="button"
-            onClick={() => onOpenSources(message.sources)}
-            title={`Lihat rujukan hukum resmi untuk ${label}`}
-            className="inline-flex items-center gap-0.5 mx-1 px-1.5 py-0.5 rounded-md bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#315BF4] font-semibold text-[11px] border border-[#C7D2FE] transition-colors align-baseline shadow-xs"
+            onClick={() => onOpenSources(message.sources, friendlyLabel)}
+            title={`Lihat rujukan hukum resmi untuk ${friendlyLabel}`}
+            className="inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded-md bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#315BF4] font-semibold text-[11px] border border-[#C7D2FE] transition-colors align-baseline shadow-xs"
           >
-            <span>{label}{extra}</span>
+            <BookOpen size={10} className="inline shrink-0 opacity-70" />
+            <span>{friendlyLabel}{extra}</span>
           </button>
         );
       }

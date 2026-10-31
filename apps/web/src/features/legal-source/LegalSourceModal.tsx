@@ -19,12 +19,14 @@ interface LegalSourceModalProps {
   isOpen: boolean;
   onClose: () => void;
   sources: LegalSource[];
+  highlightedLabel?: string | null;
 }
 
 export const LegalSourceModal: React.FC<LegalSourceModalProps> = ({
   isOpen,
   onClose,
   sources,
+  highlightedLabel,
 }) => {
   // Tutup dengan tombol Escape
   useEffect(() => {
@@ -87,58 +89,70 @@ export const LegalSourceModal: React.FC<LegalSourceModalProps> = ({
               <p className="text-sm">Tidak ada rujukan hukum eksplisit yang dilampirkan.</p>
             </div>
           ) : (
-            sources.map((source, idx) => (
-              <div key={idx} className={`${idx > 0 ? 'pt-3.5' : ''}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className="px-2 py-0.5 rounded-md bg-[#315BF4] text-white text-[11px] font-bold">
-                        {source.label || `Rujukan ${idx + 1}`}
-                      </span>
+            sources.map((source, idx) => {
+              const friendlyLabel = (source.label || `Rujukan ${idx + 1}`).replace(/^S(\d+)$/i, 'Rujukan $1');
+              const isHighlighted = Boolean(
+                highlightedLabel && friendlyLabel.toLowerCase() === highlightedLabel.toLowerCase()
+              );
 
-                      {source.article && (
-                        <span className="px-2 py-0.5 rounded-md bg-[#ECF1FF] text-[#315BF4] text-[11px] font-bold flex items-center gap-1">
-                          <FileCheck size={12} />
-                          {source.article}
+              return (
+                <div
+                  key={idx}
+                  className={`transition-all duration-200 ${idx > 0 ? 'pt-3.5' : ''} ${
+                    isHighlighted ? 'p-3 rounded-xl bg-blue-50/70 border border-[#315BF4]/30 shadow-xs' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="px-2 py-0.5 rounded-md bg-[#315BF4] text-white text-[11px] font-bold">
+                          {friendlyLabel}
                         </span>
-                      )}
 
-                      {source.page && (
-                        <span className="text-[11px] font-medium text-[#7D8DA8] bg-[#F7FAFF] border border-[#E8EDF4] px-1.5 py-0.5 rounded">
-                          Hal. PDF {source.page}
-                        </span>
+                        {source.article && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#ECF1FF] text-[#315BF4] text-[11px] font-bold flex items-center gap-1">
+                            <FileCheck size={12} />
+                            {source.article}
+                          </span>
+                        )}
+
+                        {source.page && (
+                          <span className="text-[11px] font-medium text-[#7D8DA8] bg-[#F7FAFF] border border-[#E8EDF4] px-1.5 py-0.5 rounded">
+                            Hal. PDF {source.page}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-[14px] font-bold text-[#1D2737] leading-snug mb-1">
+                        {source.title}
+                      </h3>
+
+                      {source.source_section && (
+                        <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-[#7D8DA8]">
+                          <span>Bagian:</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#F4F7FC] text-[#42506A] font-medium text-[11px] border border-[#E8EDF4]">
+                            {SECTION_LABEL[source.source_section] ?? source.source_section}
+                          </span>
+                        </div>
                       )}
                     </div>
 
-                    <h3 className="text-[14px] font-bold text-[#1D2737] leading-snug mb-1">
-                      {source.title}
-                    </h3>
-
-                    {source.source_section && (
-                      <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-[#7D8DA8]">
-                        <span>Bagian:</span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#F4F7FC] text-[#42506A] font-medium text-[11px] border border-[#E8EDF4]">
-                          {SECTION_LABEL[source.source_section] ?? source.source_section}
-                        </span>
-                      </div>
+                    {source.official_url && (
+                      <a
+                        href={source.official_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 p-2 rounded-xl bg-[#F7FAFF] hover:bg-[#ECF1FF] text-[#315BF4] border border-[#E8EDF4] hover:border-[#315BF4]/30 transition-colors flex items-center gap-1 text-[12px] font-semibold"
+                        title="Buka dokumen resmi di JDIH/BPK"
+                      >
+                        <span>JDIH / BPK</span>
+                        <ExternalLink size={14} />
+                      </a>
                     )}
                   </div>
-
-                  {source.official_url && (
-                    <a
-                      href={source.official_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 p-2 rounded-xl bg-[#F7FAFF] hover:bg-[#ECF1FF] text-[#315BF4] border border-[#E8EDF4] hover:border-[#315BF4]/30 transition-colors flex items-center gap-1 text-[12px] font-semibold"
-                      title="Buka dokumen resmi di JDIH/BPK"
-                    >
-                      <span>JDIH / BPK</span>
-                      <ExternalLink size={14} />
-                    </a>
-                  )}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 

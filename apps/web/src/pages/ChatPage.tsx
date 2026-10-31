@@ -23,6 +23,7 @@ export const ChatPage: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSources, setSelectedSources] = useState<LegalSource[]>([]);
+  const [highlightedSourceLabel, setHighlightedSourceLabel] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -203,9 +204,10 @@ export const ChatPage: React.FC = () => {
     handleSendMessage(inputText);
   };
 
-  const handleOpenSources = (sources?: LegalSource[]) => {
+  const handleOpenSources = (sources?: LegalSource[], targetLabel?: string) => {
     if (sources && sources.length > 0) {
       setSelectedSources(sources);
+      setHighlightedSourceLabel(targetLabel || null);
       setIsModalOpen(true);
     }
   };
@@ -284,8 +286,12 @@ export const ChatPage: React.FC = () => {
       {/* 4. Legal Source Dialog/Sheet Modal */}
       <LegalSourceModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setHighlightedSourceLabel(null);
+        }}
         sources={selectedSources}
+        highlightedLabel={highlightedSourceLabel}
       />
     </div>
   );

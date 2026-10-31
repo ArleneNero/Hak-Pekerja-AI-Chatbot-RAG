@@ -454,27 +454,66 @@ export async function executeRagQuery(
   });
 
   // 7. Panggil LLM
-  const answer = await callChatCompletion(messages);
+  const rawAnswer = await callChatCompletion(messages);
 
-  // 8. Filter sitasi: jika jawaban mengutip label spesifik ([S1], [S2], dsb.),
-  // sertakan HANYA rujukan yang benar-benar dikutip agar user hanya melihat pasal yang relevan.
-  const citedLabels = new Set<string>();
-  const citationMatches = answer.matchAll(/\[(?:Rujukan|S)\s*(\d+)\]/gi);
-  for (const m of citationMatches) {
-    citedLabels.add(`S${m[1]}`);
+  // 8. Normalisasi & Penomoran Ulang Sitasi (Sequential Re-indexing):
+  // Masalah sebelumnya: Jika candidate ada 10 (S1..S10) dan LLM hanya mengutip S1, S6, S7, S9,
+  // maka user melihat "4 rujukan" tapi labelnya ganjil sampai "S9", serta memakai huruf "S" teknis.
+  // Solusi: Kita remap urutan kutipan yang muncul dalam teks menjadi [Rujukan 1], [Rujukan 2], dst.
+  const labelMap = new Map<string, number>();
+  let nextCitationNumber = 1;
+
+  // Temukan semua sitasi dalam teks jawaban sesuai urutan kemunculannya
+  const citationRegex = /\[(?:Rujukan|S)\s*(\d+)([^\]]*)\]/gi;
+  let match: RegExpExecArray | null;
+  while ((match = citationRegex.exec(rawAnswer)) !== null) {
+    const origKey = `S${match[1]}`;
+    if (!labelMap.has(origKey)) {
+      const candidateExists = candidateSources.some((c) => c.label === origKey);
+      if (candidateExists) {
+        labelMap.set(origKey, nextCitationNumber);
+        nextCitationNumber++;
+      }
+    }
   }
 
-  let finalSources: LegalSourceDto[] = candidateSources;
-  if (citedLabels.size > 0) {
-    const matched = candidateSources.filter((s) => s.label && citedLabels.has(s.label));
-    if (matched.length > 0) {
-      finalSources = matched;
+  let finalSources: LegalSourceDto[] = [];
+  let formattedAnswer = rawAnswer;
+
+  if (labelMap.size > 0) {
+    // 1. Susun finalSources berurutan: Rujukan 1, Rujukan 2, Rujukan 3, ...
+    for (const [origKey, newNum] of labelMap.entries()) {
+      const found = candidateSources.find((c) => c.label === origKey);
+      if (found) {
+        finalSources.push({
+          ...found,
+          label: `Rujukan ${newNum}`,
+        });
+      }
     }
+
+    // 2. Gantikan format teknis [S1], [S6] dsb. di dalam jawaban menjadi [Rujukan 1], [Rujukan 2]
+    formattedAnswer = rawAnswer.replace(/\[(?:Rujukan|S)\s*(\d+)([^\]]*)\]/gi, (fullMatch, num, extra) => {
+      const origKey = `S${num}`;
+      const newNum = labelMap.get(origKey);
+      if (newNum !== undefined) {
+        const extraText = extra ? extra.trim() : '';
+        return extraText ? `[Rujukan ${newNum} ${extraText}]` : `[Rujukan ${newNum}]`;
+      }
+      return fullMatch;
+    });
+  } else {
+    // Jika tidak ada sitasi eksplisit yang dikutip (misal ringkasan),
+    // sertakan kandidat teratas dan beri label ramah "Rujukan 1", "Rujukan 2", ...
+    finalSources = candidateSources.slice(0, 3).map((c, idx) => ({
+      ...c,
+      label: `Rujukan ${idx + 1}`,
+    }));
   }
 
   return {
     status: 'answered',
-    answer,
+    answer: formattedAnswer,
     sources: finalSources,
     request_id: reqId,
     latency_seconds: (Date.now() - startTime) / 1000,
