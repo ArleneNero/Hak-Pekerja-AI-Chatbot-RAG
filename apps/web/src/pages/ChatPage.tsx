@@ -219,26 +219,34 @@ export const ChatPage: React.FC = () => {
     navigate(ROUTES.CHAT);
   };
 
+  const isEmptyState = messages.length === 0 && !isLoading;
+
   return (
-    <div className="flex flex-col h-full bg-figma-canvas relative">
+    <div className="flex flex-col h-full min-h-0 bg-figma-canvas relative overflow-hidden">
       {/* 1. Header Bar */}
       <ChatHeader title={conversationTitle} onNewChat={handleResetSession} />
 
-      {/* 2. Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-        {messages.length === 0 && !isLoading && (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-figma-muted max-w-md mx-auto">
-            <div className="w-24 h-24 mb-4 flex items-center justify-center">
+      {/* 2. Messages Container (Statis jika kosong, scrollable jika ada riwayat) */}
+      <div
+        className={`flex-1 min-h-0 p-4 md:p-6 ${
+          isEmptyState
+            ? 'overflow-hidden flex flex-col items-center justify-center select-none touch-none'
+            : 'overflow-y-auto space-y-6 overscroll-contain'
+        }`}
+      >
+        {isEmptyState && (
+          <div className="flex flex-col items-center justify-center text-center p-4 text-figma-muted max-w-sm mx-auto my-auto select-none pointer-events-none">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 flex items-center justify-center">
               <img
                 src="/assets/document-hint.png"
                 alt="Pertanyaan Regulasi HakKetenagakerjaan"
-                className="w-full h-full object-contain select-none drop-shadow-sm"
+                className="w-full h-full object-contain select-none drop-shadow-xs"
               />
             </div>
-            <h3 className="text-lg font-bold text-figma-dark mb-2">
+            <h3 className="text-[15px] sm:text-base font-bold text-figma-dark mb-1.5 leading-snug">
               Apa yang ingin Anda tanyakan seputar hak ketenagakerjaan?
             </h3>
-            <p className="text-xs text-figma-body leading-relaxed mb-4">
+            <p className="text-[12px] sm:text-xs text-figma-body leading-relaxed max-w-xs">
               Ketik pertanyaan tentang PKWT/PKWTT, uang lembur, pesangon PHK, perhitungan cuti atau THR di bawah.
             </p>
           </div>
@@ -275,7 +283,7 @@ export const ChatPage: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 3. Sticky Composer Bar */}
+      {/* 3. Sticky Composer Bar (Selalu terlihat langsung di bagian bawah layar) */}
       <ChatComposer
         inputText={inputText}
         isLoading={isLoading}

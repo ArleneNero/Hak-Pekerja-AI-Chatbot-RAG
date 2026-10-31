@@ -8,13 +8,13 @@ interface ChatHeaderProps {
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ title, onNewChat }) => {
   return (
-    <div className="px-5 py-3 bg-white border-b border-figma-border flex items-center justify-between flex-shrink-0 z-10 shadow-sm">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-8 h-8 rounded-lg bg-[#ECF1FF] text-[#285CF5] flex items-center justify-center shrink-0">
-          <Scale size={18} />
+    <div className="px-4 py-2.5 sm:px-5 sm:py-3 bg-white border-b border-figma-border flex items-center justify-between flex-shrink-0 z-10 shadow-xs">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#ECF1FF] text-[#285CF5] flex items-center justify-center shrink-0">
+          <Scale size={16} />
         </div>
         <div className="min-w-0">
-          <h2 className="text-[15px] font-bold text-[#1D2737] leading-tight truncate">
+          <h2 className="text-[14px] sm:text-[15px] font-bold text-[#1D2737] leading-tight truncate">
             {title || 'Ruang Pertanyaan Regulasi'}
           </h2>
         </div>

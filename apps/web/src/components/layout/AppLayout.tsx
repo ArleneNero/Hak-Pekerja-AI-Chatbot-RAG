@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
 import { useAuth } from '@/features/account/AuthContext';
 import { AuthModal, type AuthMode } from '@/features/account/AuthModal';
 import { historyService } from '@/services/historyService';
@@ -74,7 +74,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-figma-canvas overflow-hidden font-sans">
+    <div className="flex h-screen h-[100dvh] w-full bg-figma-canvas overflow-hidden font-sans">
       {/* 1. Desktop Sidebar */}
       <DesktopSidebar
         user={user}
@@ -85,12 +85,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       />
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden relative">
         {/* Mobile Topbar */}
-        <header className="md:hidden h-14 bg-white border-b border-figma-border px-4 flex items-center justify-between z-30">
+        <header className="md:hidden h-14 bg-white border-b border-figma-border px-4 flex items-center justify-between shrink-0 z-30">
           <div 
             onClick={() => navigate(ROUTES.HOME)} 
-            className="flex items-center gap-2.5 cursor-pointer"
+            className="flex items-center gap-2.5 cursor-pointer active:opacity-80 transition-opacity"
           >
             <div className="flex items-center gap-1 shrink-0">
               <span className="w-1.5 h-5 rounded-full bg-[#285CF5] block" />
@@ -105,14 +105,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             {!user && (
               <button
                 onClick={() => openAuth('login')}
-                className="px-2.5 py-1 text-xs font-semibold text-[#285CF5] bg-[#ECF1FF] hover:bg-[#D9E4FF] rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#285CF5] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1740B8] active:scale-95 text-white font-bold text-[12px] shadow-sm shadow-blue-500/20 transition-all"
               >
-                Masuk
+                <LogIn size={13} className="shrink-0 stroke-[2.5]" />
+                <span>Masuk</span>
               </button>
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-figma-body hover:text-figma-dark rounded-lg focus:outline-none"
+              className="p-2 text-figma-body hover:text-figma-dark rounded-xl hover:bg-slate-100/80 active:scale-95 transition-all focus:outline-none"
               aria-label="Toggle Navigation"
             >
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -132,7 +133,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         )}
 
         {/* Viewport Content */}
-        <main className="flex-1 overflow-y-auto bg-figma-canvas relative">
+        <main
+          className={`flex-1 min-h-0 bg-figma-canvas relative ${
+            location.pathname.startsWith(ROUTES.CHAT)
+              ? 'overflow-hidden flex flex-col'
+              : 'overflow-y-auto'
+          }`}
+        >
           {children}
         </main>
       </div>
