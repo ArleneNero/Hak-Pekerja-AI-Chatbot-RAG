@@ -35,7 +35,7 @@ export async function sendQueryToRag(
     headers['Authorization'] = `Bearer ${opts.idToken}`;
   }
 
-  // 1. First attempt: Express API Gateway endpoint (/api/v1/chat)
+  // 1. Direct call to Express API Gateway (/api/v1/chat)
   try {
     const gatewayEndpoint = `${API_BASE_URL}/api/v1/chat`;
     const response = await fetch(gatewayEndpoint, {
@@ -54,30 +54,13 @@ export async function sendQueryToRag(
       const data: RagApiResponse = await response.json();
       return data;
     }
-  } catch {
-    // If Gateway is not reachable, fall back to direct internal RAG proxy
+
+    const errText = await response.text();
+    throw new Error(`Gateway responded with status ${response.status}: ${errText.slice(0, 150)}`);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      throw err;
+    }
+    throw new Error(String(err));
   }
-
-  // 2. Direct internal RAG fallback (/internal/rag/query)
-  const ragEndpoint = `${API_BASE_URL}/internal/rag/query`;
-  const response = await fetch(ragEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      question,
-      top_k: 7,
-      history: opts.history || [],
-    }),
-    signal: opts.signal,
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Gagal menghubungi layanan RAG (${response.status}): ${errorBody.slice(0, 100)}`);
-  }
-
-  const data: RagApiResponse = await response.json();
-  return data;
 }
