@@ -4,7 +4,8 @@
     "hakpekerja-api": {
       "root": "apps/api",
       "framework": "express",
-      "buildCommand": "npm install && npm run build",
+      "installCommand": "npm install --include=dev",
+      "buildCommand": "npm run build",
       "bindings": [
         {
           "type": "service",
@@ -17,7 +18,8 @@
     "hakpekerja-web": {
       "root": "apps/web",
       "framework": "vite",
-      "buildCommand": "npm install && npm run build"
+      "installCommand": "npm install --include=dev",
+      "buildCommand": "npm run build"
     },
     "rag": {
       "root": "services/rag",
