@@ -4,6 +4,7 @@
     "hakpekerja-api": {
       "root": "apps/api",
       "framework": "express",
+      "entrypoint": "dist/server.js",
       "installCommand": "npm install --include=dev",
       "buildCommand": "npm run build",
       "bindings": [
@@ -23,7 +24,8 @@
     },
     "rag": {
       "root": "services/rag",
-      "framework": "fastapi"
+      "framework": "fastapi",
+      "entrypoint": "main:app"
     }
   },
   "rewrites": [
