@@ -12,17 +12,32 @@ export const createApp = (): Application => {
   const app = express();
 
   // Security and utilities
-  app.use(helmet());
+  // helmet() diset agar tidak memblokir cross-origin resource fetch dari Vercel frontend
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    })
+  );
+
+  // CORS: izinkan semua origin jika CORS_ORIGIN=* (wildcard), atau daftar origin spesifik
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (like curl, mobile, or same-origin)
+        // Izinkan request tanpa origin (curl, mobile app, Vercel internal routing)
         if (!origin) return callback(null, true);
-        const allowedOrigins = config.corsOrigin.split(',').map((o) => o.trim());
+
+        const rawOrigin = config.corsOrigin.trim();
+
+        // Wildcard: izinkan semua origin
+        if (rawOrigin === '*') return callback(null, true);
+
+        // Daftar origin spesifik (comma-separated)
+        const allowedOrigins = rawOrigin.split(',').map((o) => o.trim());
         if (allowedOrigins.includes(origin) || !config.isProduction) {
           callback(null, true);
         } else {
-          callback(new Error('Blocked by CORS policy'));
+          callback(new Error(`Blocked by CORS policy: origin ${origin} not allowed`));
         }
       },
       credentials: true,
