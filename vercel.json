@@ -7,8 +7,7 @@
     },
     "backend": {
       "root": "apps/api",
-      "framework": "express",
-      "entrypoint": "dist/server.cjs"
+      "framework": "express"
     }
   },
   "rewrites": [
