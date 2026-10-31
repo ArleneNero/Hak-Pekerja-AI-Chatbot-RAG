@@ -1,30 +1,9 @@
+import { executeRagQuery, RagResult, LegalSourceDto, RagStatus } from '../../rag/ragEngine';
 import { config } from '../../config/env';
 
-export interface LegalSource {
-  id: string;
-  title: string;
-  label?: string;
-  article?: string;
-  page?: number;
-  official_url?: string;
-  source_section?: string;
-}
-
-export type RagStatus =
-  | 'answered'
-  | 'insufficient_evidence'
-  | 'needs_review'
-  | 'out_of_scope'
-  | 'invalid_question'
-  | 'service_unavailable';
-
-export interface RagQueryResponse {
-  status: RagStatus;
-  answer: string;
-  sources: LegalSource[];
-  request_id: string;
-  latency_seconds: number;
-}
+export type LegalSource = LegalSourceDto;
+export type { RagStatus };
+export type RagQueryResponse = RagResult;
 
 class RagClient {
   private baseUrl: string;
@@ -34,9 +13,13 @@ class RagClient {
   }
 
   async checkHealth(): Promise<boolean> {
+    // Dengan embedded RAG, health selalu true jika config Qdrant & Chat Key tersedia
+    if (config.qdrantUrl && config.chatApiKey) {
+      return true;
+    }
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
       const res = await fetch(`${this.baseUrl}/health`, { signal: controller.signal });
       clearTimeout(timeoutId);
       return res.ok;
@@ -51,6 +34,16 @@ class RagClient {
     requestId?: string,
     history?: Array<{ role: string; content: string }>
   ): Promise<RagQueryResponse> {
+    // 1. Prioritaskan Eksekusi Embedded RAG (Pola Xiaomimi - Langsung di Node.js)
+    try {
+      if (config.qdrantUrl && config.chatApiKey) {
+        return await executeRagQuery(question, topK, requestId, history);
+      }
+    } catch (embeddedErr) {
+      console.warn('[RagClient] Embedded RAG query error, trying remote fallback if configured:', embeddedErr);
+    }
+
+    // 2. Fallback jika ada service terpisah di RAG_SERVICE_URL
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90000);
 
@@ -88,4 +81,3 @@ class RagClient {
 }
 
 export const ragClient = new RagClient();
-

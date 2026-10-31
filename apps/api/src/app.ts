@@ -38,6 +38,18 @@ export const createApp = (): Application => {
   apiRouter.use(chatRouter);
   apiRouter.use(conversationRouter);
 
+  // Mount internal RAG query endpoint directly on Express Gateway
+  app.post('/internal/rag/query', async (req: Request, res: Response, next) => {
+    try {
+      const { question, top_k, history } = req.body;
+      const { executeRagQuery } = await import('./rag/ragEngine');
+      const result = await executeRagQuery(question, top_k, req.id, history);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use('/api/v1', apiRouter);
   app.use('/v1', apiRouter);
 

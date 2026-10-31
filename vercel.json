@@ -1,44 +1,27 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
-    "hakpekerja-api": {
+    "frontend": {
+      "root": "apps/web",
+      "framework": "vite"
+    },
+    "backend": {
       "root": "apps/api",
       "framework": "express",
-      "entrypoint": "src/server.ts",
-      "installCommand": "npm install --include=dev",
-      "buildCommand": "npm run build",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "rag",
-          "format": "url",
-          "env": "RAG_SERVICE_URL"
-        }
-      ]
-    },
-    "hakpekerja-web": {
-      "root": "apps/web",
-      "framework": "vite",
-      "installCommand": "npm install --include=dev",
-      "buildCommand": "npm run build"
-    },
-    "rag": {
-      "root": "services/rag",
-      "framework": "fastapi",
-      "entrypoint": "main:app"
+      "entrypoint": "src/server.ts"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": {
-        "service": "hakpekerja-api"
+        "service": "backend"
       }
     },
     {
       "source": "/(.*)",
       "destination": {
-        "service": "hakpekerja-web"
+        "service": "frontend"
       }
     }
   ]
