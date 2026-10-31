@@ -201,7 +201,7 @@ async function callChatCompletion(
         model: config.chatModel,
         messages,
         temperature,
-        max_tokens: 1800,
+        max_tokens: 2500,
       }),
     });
 
@@ -228,7 +228,7 @@ async function callChatCompletion(
           model: 'deepseek/deepseek-chat',
           messages,
           temperature,
-          max_tokens: 1800,
+          max_tokens: 2500,
         }),
       });
 
@@ -505,6 +505,9 @@ export async function executeRagQuery(
 
     // 3. Rapikan spasi sebelum tanda baca (misal "[Rujukan 1] ." menjadi "[Rujukan 1].")
     formattedAnswer = formattedAnswer.replace(/(\[\s*Rujukan\s*\d+[^\]]*\])\s+([.,;:])/gi, '$1$2');
+
+    // 4. Bersihkan potongan sitasi gantung di akhir teks jika sempat terputus (misal "–[S")
+    formattedAnswer = formattedAnswer.replace(/[\s–-]*\[(?:Rujukan|S)[^\]]*$/i, '').trim();
   } else {
     // Jika tidak ada sitasi eksplisit yang dikutip (misal ringkasan),
     // sertakan kandidat teratas dan beri label ramah "Rujukan 1", "Rujukan 2", ...

@@ -60,16 +60,23 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         const extra = citationMatch[2];
         const friendlyLabel = rawLabel.replace(/^S(\d+)$/i, 'Rujukan $1');
         return (
-          <button
+          <span
             key={`${keyPrefix}-cit-${index}`}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onOpenSources(message.sources, friendlyLabel)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onOpenSources(message.sources, friendlyLabel);
+              }
+            }}
             title={`Lihat rujukan hukum resmi untuk ${friendlyLabel}`}
-            className="inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded-md bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#315BF4] font-semibold text-[11px] border border-[#C7D2FE] transition-colors align-baseline shadow-xs"
+            className="inline-flex items-center gap-1 mx-1 px-1.5 py-0.5 rounded-md bg-[#EEF2FF] hover:bg-[#E0E7FF] text-[#315BF4] font-semibold text-[11px] border border-[#C7D2FE] transition-colors align-baseline shadow-xs cursor-pointer whitespace-nowrap"
           >
             <BookOpen size={10} className="inline shrink-0 opacity-70" />
             <span>{friendlyLabel}{extra}</span>
-          </button>
+          </span>
         );
       }
 
