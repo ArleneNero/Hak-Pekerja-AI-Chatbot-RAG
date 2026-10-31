@@ -12,12 +12,46 @@ interface ChatBubbleProps {
 export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, onRetry }) => {
   const isUser = message.role === 'user';
 
+  /**
+   * Render teks dengan bold markdown (**teks**), italic (*teks*), dan inline code (`kode`).
+   * Menghilangkan tanda bintang (**) yang mengganggu dan mengubahnya menjadi teks tebal yang rapi.
+   */
+  const renderTextSegment = (text: string, keyPrefix: string): React.ReactNode[] => {
+    // Pecah berdasarkan: bold (**...**), inline code (`...`), atau italic (*...*)
+    const inlineParts = text.split(/(\*\*[^*]+?\*\*|`[^`]+?`|\*[^*]+?\*)/g);
+    return inlineParts.map((seg, i) => {
+      if (!seg) return null;
+      if (seg.startsWith('**') && seg.endsWith('**') && seg.length >= 4) {
+        return (
+          <strong key={`${keyPrefix}-b${i}`} className="font-bold text-slate-900">
+            {seg.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (seg.startsWith('`') && seg.endsWith('`') && seg.length >= 2) {
+        return (
+          <code key={`${keyPrefix}-c${i}`} className="px-1.5 py-0.5 rounded bg-slate-100 text-[12px] font-mono text-slate-800 border border-slate-200/60">
+            {seg.slice(1, -1)}
+          </code>
+        );
+      }
+      if (seg.startsWith('*') && seg.endsWith('*') && seg.length >= 2) {
+        return (
+          <em key={`${keyPrefix}-i${i}`} className="italic text-slate-700">
+            {seg.slice(1, -1)}
+          </em>
+        );
+      }
+      return <React.Fragment key={`${keyPrefix}-t${i}`}>{seg}</React.Fragment>;
+    });
+  };
+
   const renderContent = (content: string) => {
     if (isUser) {
       return content;
     }
 
-    // Ubah sitasi [Rujukan 1] menjadi badge interaktif, dan markdown link [Text](url) menjadi clickable link
+    // Pecah berdasarkan: sitasi [S1], markdown link [text](url)
     const parts = content.split(/(\[(?:Rujukan|S)\s*\d+[^\]]*\]|\[[^\]]+\]\(https?:\/\/[^\s\)]+\))/g);
     return parts.map((part, index) => {
       // 1. Cek Sitasi Rujukan Hukum Resmi
@@ -58,7 +92,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         );
       }
 
-      return <span key={index}>{part}</span>;
+      // 3. Teks biasa — render dengan bold/code inline
+      return <span key={index}>{renderTextSegment(part, `p${index}`)}</span>;
     });
   };
 

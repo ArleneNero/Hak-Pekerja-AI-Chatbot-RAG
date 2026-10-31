@@ -55,7 +55,7 @@ chatRouter.post('/chat', optionalAuth, async (req: Request, res: Response, next:
       }
     }
 
-    const topKNumber = typeof top_k === 'number' && top_k > 0 ? top_k : 7;
+    const topKNumber = typeof top_k === 'number' && top_k > 0 ? top_k : 10;
     const ragResponse = await ragClient.query(trimmedQuestion, topKNumber, req.id, conversationHistory);
 
     // If authenticated user provided or requested conversation tracking:

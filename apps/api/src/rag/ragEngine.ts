@@ -44,6 +44,32 @@ const qdrant = new QdrantClient({
 });
 
 /**
+ * Ubah nama section teknis database menjadi bahasa yang mudah dipahami masyarakat awam.
+ */
+export function humanizeSection(section?: string): string {
+  if (!section) return 'Batang Tubuh Peraturan';
+  const s = section.toLowerCase().trim();
+  switch (s) {
+    case 'regulation_body':
+      return 'Batang Tubuh Peraturan';
+    case 'explanation':
+      return 'Penjelasan Resmi Regulasi';
+    case 'court_text':
+      return 'Pertimbangan Putusan Hakim';
+    case 'general_provision':
+      return 'Ketentuan Umum';
+    case 'closing_provision':
+      return 'Ketentuan Penutup';
+    case 'transitional_provision':
+      return 'Ketentuan Peralihan';
+    case 'annex':
+      return 'Lampiran Peraturan';
+    default:
+      return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+}
+
+/**
  * Normalisasi teks Indonesia
  */
 function norm(s: string): string {
@@ -354,8 +380,7 @@ export async function executeRagQuery(
 
   ranked.sort((a, b) => b.rerank - a.rerank);
 
-  const selectedCandidates = ranked.slice(0, Math.min(topK || 7, 7));
-  if (selectedCandidates.length === 0) {
+  if (ranked.length === 0) {
     return {
       status: 'insufficient_evidence',
       answer: 'Maaf, rujukan pasal atau dokumen regulasi terkait belum ditemukan dalam basis data hukum kami.',
@@ -365,9 +390,25 @@ export async function executeRagQuery(
     };
   }
 
+  // Seleksi sumber secara dinamis se-relevan mungkin (bukan dipatok mati 7 sumber):
+  // Ambil top-1 sebagai anchor. Chunks berikutnya hanya diambil jika:
+  // - Skor rerank >= 75% dari topScore ATAU selisih rerank <= 0.15
+  // - DAN skor absolut rerank >= 0.40
+  // Fleksibel antara 1 hingga 10 rujukan sesuai keluasan topik.
+  const topScore = ranked[0].rerank;
+  const adaptiveCandidates = ranked.filter((r, idx) => {
+    if (idx === 0) return true;
+    const relativeScore = r.rerank / Math.max(0.001, topScore);
+    const scoreDiff = topScore - r.rerank;
+    return (relativeScore >= 0.75 || scoreDiff <= 0.15) && r.rerank >= 0.40;
+  });
+
+  const maxLimit = Math.min(10, Math.max(1, topK || 10));
+  const selectedCandidates = adaptiveCandidates.slice(0, maxLimit);
+
   // 5. Pembentukan Konteks Bukti & Metadata Sumber
   const contextBlocks: string[] = [];
-  const legalSources: LegalSourceDto[] = [];
+  const candidateSources: LegalSourceDto[] = [];
 
   selectedCandidates.forEach((hit, idx) => {
     const p = hit.payload;
@@ -375,13 +416,13 @@ export async function executeRagQuery(
     const docId = p.document_id || 'UNKNOWN';
     const meta = DOCS[docId] || { title: p.title || docId, url: p.official_url || '' };
     const article = p.article_verified !== false ? p.article : undefined;
-    const section = p.source_section || 'unknown';
+    const section = humanizeSection(p.source_section);
 
     const header = `[${label}] ${meta.title} | ${article || 'pasal umum'} | halaman PDF ${p.page || '-'} | ${section}`;
     const chunkText = String(p.text || '').slice(0, 2600);
 
     contextBlocks.push(`${header}\n${chunkText}`);
-    legalSources.push({
+    candidateSources.push({
       id: String(hit.id),
       label,
       title: meta.title,
@@ -415,10 +456,26 @@ export async function executeRagQuery(
   // 7. Panggil LLM
   const answer = await callChatCompletion(messages);
 
+  // 8. Filter sitasi: jika jawaban mengutip label spesifik ([S1], [S2], dsb.),
+  // sertakan HANYA rujukan yang benar-benar dikutip agar user hanya melihat pasal yang relevan.
+  const citedLabels = new Set<string>();
+  const citationMatches = answer.matchAll(/\[(?:Rujukan|S)\s*(\d+)\]/gi);
+  for (const m of citationMatches) {
+    citedLabels.add(`S${m[1]}`);
+  }
+
+  let finalSources: LegalSourceDto[] = candidateSources;
+  if (citedLabels.size > 0) {
+    const matched = candidateSources.filter((s) => s.label && citedLabels.has(s.label));
+    if (matched.length > 0) {
+      finalSources = matched;
+    }
+  }
+
   return {
     status: 'answered',
     answer,
-    sources: legalSources,
+    sources: finalSources,
     request_id: reqId,
     latency_seconds: (Date.now() - startTime) / 1000,
   };

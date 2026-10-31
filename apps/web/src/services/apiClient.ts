@@ -45,7 +45,7 @@ export async function sendQueryToRag(
         question,
         conversationId: opts.conversationId,
         history: opts.history || [],
-        top_k: 7,
+        top_k: 10, // Batas atas pencarian; engine akan memfilter se-relevan mungkin secara dinamis
       }),
       signal: opts.signal,
     });
@@ -56,7 +56,17 @@ export async function sendQueryToRag(
     }
 
     const errText = await response.text();
-    throw new Error(`Gateway responded with status ${response.status}: ${errText.slice(0, 150)}`);
+    let cleanMessage = '';
+    try {
+      const parsed = JSON.parse(errText);
+      if (parsed?.error?.message) {
+        cleanMessage = parsed.error.message;
+      }
+    } catch {
+      // bukan respons JSON
+    }
+
+    throw new Error(cleanMessage || `Layanan tidak merespons (Status ${response.status})`);
   } catch (err: unknown) {
     if (err instanceof Error) {
       throw err;

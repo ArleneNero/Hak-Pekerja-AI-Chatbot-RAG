@@ -140,12 +140,41 @@ export const ChatPage: React.FC = () => {
       }
     } catch (err: unknown) {
       const elapsed = (Date.now() - startTime) / 1000;
-      const errorMsg = err instanceof Error ? err.message : 'Terjadi kendala saat memproses permintaan.';
+
+      // Log detail teknis di console untuk debugging, tapi jangan tampilkan ke user
+      console.error('[ChatPage] Query failed:', err);
+
+      // Tentukan pesan yang ramah dan menenangkan pengguna
+      let userMessage = 'Maaf, terjadi kendala saat memproses pertanyaan Anda. Silakan coba beberapa saat lagi.';
+      if (err instanceof Error) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
+          userMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda dan coba lagi.';
+        } else if (msg.includes('timeout') || msg.includes('timed out')) {
+          userMessage = 'Permintaan membutuhkan waktu terlalu lama. Silakan coba lagi.';
+        } else if (msg.includes('429') || msg.includes('rate limit')) {
+          userMessage = 'Layanan sedang menerima banyak pertanyaan. Mohon tunggu beberapa saat sebelum mencoba kembali.';
+        } else if (msg.includes('401') || msg.includes('403')) {
+          userMessage = 'Sesi Anda telah berakhir. Silakan masuk ulang.';
+        } else if (
+          msg.includes('500') ||
+          msg.includes('server error') ||
+          msg.includes('gateway') ||
+          msg.includes('cors') ||
+          msg.includes('invocation') ||
+          msg.includes('internal')
+        ) {
+          userMessage = 'Layanan sedang mengalami pemeliharaan sementara. Tim kami sedang menanganinya.';
+        } else if (err.message && err.message.length < 120 && !err.message.includes('http') && !err.message.includes('{')) {
+          // Pesan ramah seperti "Pertanyaan minimal 2 karakter"
+          userMessage = err.message;
+        }
+      }
 
       const failureMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: `Maaf, terjadi gangguan koneksi ke layanan RAG: ${errorMsg}. Pastikan service RAG aktif di port 8001.`,
+        content: userMessage,
         status: 'service_unavailable',
         sources: [],
         createdAt: Date.now(),

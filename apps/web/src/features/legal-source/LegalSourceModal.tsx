@@ -2,6 +2,19 @@ import React, { useEffect } from 'react';
 import { X, ExternalLink, BookOpen, FileCheck, Shield } from 'lucide-react';
 import { LegalSource } from '../../types/chat';
 
+/** Terjemahkan kode section internal ke label hukum yang mudah dipahami masyarakat */
+const SECTION_LABEL: Record<string, string> = {
+  regulation_body: 'Batang Tubuh Peraturan',
+  explanation: 'Penjelasan Resmi Regulasi',
+  court_text: 'Pertimbangan Putusan Hakim',
+  preamble: 'Bagian Pembukaan',
+  annex: 'Lampiran Peraturan',
+  definition: 'Ketentuan Umum / Definisi',
+  transitional: 'Ketentuan Peralihan',
+  closing: 'Ketentuan Penutup',
+  unknown: 'Pasal Pokok',
+};
+
 interface LegalSourceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -102,9 +115,12 @@ export const LegalSourceModal: React.FC<LegalSourceModalProps> = ({
                     </h3>
 
                     {source.source_section && (
-                      <p className="text-[11.5px] text-[#7D8DA8] italic">
-                        Bagian: {source.source_section}
-                      </p>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-[#7D8DA8]">
+                        <span>Bagian:</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#F4F7FC] text-[#42506A] font-medium text-[11px] border border-[#E8EDF4]">
+                          {SECTION_LABEL[source.source_section] ?? source.source_section}
+                        </span>
+                      </div>
                     )}
                   </div>
 
