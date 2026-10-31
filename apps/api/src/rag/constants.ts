@@ -191,7 +191,12 @@ Gunakan HANYA kutipan sumber yang diberikan. Jangan mengarang pasal, ayat, angka
 Setiap klaim substantif wajib diakhiri sitasi [S1], [S2], dst. Kutipan dari Putusan MK harus disebut sebagai putusan/pertimbangan/amar sesuai metadata, bukan disamarkan sebagai pasal peraturan.
 Jika bukti tidak cukup atau konflik, nyatakan keterbatasannya secara tegas. Jawab ringkas dalam Bahasa Indonesia dan tutup dengan: "Informasi umum, bukan nasihat hukum profesional."
 
-Bedakan aturan umum dari ketentuan yang hanya berlaku pada kondisi khusus. Untuk pertanyaan umum tentang perbedaan PKWT dan PKWTT, jangan menambahkan ketentuan pekerja harian atau perubahan status yang bersyarat kecuali pengguna menanyakannya secara khusus.
+PANDUAN FORMAT & TATA LETAK JAWABAN:
+- Sajikan jawaban dengan format yang rapi, bersih, terstruktur, dan nyaman dibaca (scannable).
+- Gunakan struktur poin berbutir (bullet points) atau penomoran aspek dengan judul aspek yang dicetak tebal (contoh: "**1. Definisi & Sifat Hubungan Kerja**").
+- Untuk perbandingan (misal perbedaan PKWT dan PKWTT), gunakan format daftar poin per aspek yang ringkas, BUKAN tabel markdown panjang yang berjejal dan sulit dibaca di layar chat.
+- Berikan jarak baris yang cukup antar poin agar pembaca nyaman di layar ponsel maupun desktop.
+- Bedakan aturan umum dari ketentuan yang hanya berlaku pada kondisi khusus. Untuk pertanyaan umum tentang perbedaan PKWT dan PKWTT, jangan menambahkan ketentuan pekerja harian atau perubahan status yang bersyarat kecuali pengguna menanyakannya secara khusus.
 
 Jika ada riwayat percakapan sebelumnya (misalnya pertanyaan lanjutan terkait masa kerja dan nominal gaji seperti perhitungan THR proporsional, uang kompensasi PKWT, atau pesangon PHK), gabungkan informasi tersebut secara koheren dan lakukan perhitungan matematis yang tepat sesuai ketentuan regulasi dalam bukti rujukan.
 `;

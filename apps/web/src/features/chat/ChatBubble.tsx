@@ -46,13 +46,12 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
     });
   };
 
-  const renderContent = (content: string) => {
-    if (isUser) {
-      return content;
-    }
-
-    // Pecah berdasarkan: sitasi [S1], markdown link [text](url)
-    const parts = content.split(/(\[(?:Rujukan|S)\s*\d+[^\]]*\]|\[[^\]]+\]\(https?:\/\/[^\s\)]+\))/g);
+  /**
+   * Mengurai elemen inline: sitasi rujukan, markdown link, dan teks berformat.
+   */
+  const renderInline = (text: string, keyPrefix: string): React.ReactNode => {
+    // Pecah berdasarkan: sitasi [Rujukan 1] / [S1], markdown link [text](url)
+    const parts = text.split(/(\[(?:Rujukan|S)\s*\d+[^\]]*\]|\[[^\]]+\]\(https?:\/\/[^\s\)]+\))/g);
     return parts.map((part, index) => {
       // 1. Cek Sitasi Rujukan Hukum Resmi (Ubah format teknis [S1] menjadi [Rujukan 1])
       const citationMatch = part.match(/^\[((?:Rujukan|S)\s*\d+)([^\]]*)\]$/);
@@ -62,7 +61,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         const friendlyLabel = rawLabel.replace(/^S(\d+)$/i, 'Rujukan $1');
         return (
           <button
-            key={index}
+            key={`${keyPrefix}-cit-${index}`}
             type="button"
             onClick={() => onOpenSources(message.sources, friendlyLabel)}
             title={`Lihat rujukan hukum resmi untuk ${friendlyLabel}`}
@@ -81,7 +80,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         const linkUrl = linkMatch[2];
         return (
           <a
-            key={index}
+            key={`${keyPrefix}-lnk-${index}`}
             href={linkUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -94,9 +93,138 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         );
       }
 
-      // 3. Teks biasa — render dengan bold/code inline
-      return <span key={index}>{renderTextSegment(part, `p${index}`)}</span>;
+      // 3. Teks biasa — render dengan bold/code/italic inline
+      return <React.Fragment key={`${keyPrefix}-txt-${index}`}>{renderTextSegment(part, `${keyPrefix}-${index}`)}</React.Fragment>;
     });
+  };
+
+  /**
+   * Mengurai pesan menjadi blok paragraf atau blok tabel markdown yang rapi.
+   */
+  interface ContentBlock {
+    type: 'text' | 'table';
+    content: string | string[][];
+  }
+
+  const parseBlocks = (raw: string): ContentBlock[] => {
+    const lines = raw.split('\n');
+    const blocks: ContentBlock[] = [];
+    let textBuffer: string[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // Deteksi awal tabel markdown: baris dimulai dan diakhiri '|', dan baris berikutnya adalah separator (|---|---|)
+      const hasPipes = trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2;
+      const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+      const isNextSeparator =
+        nextLine.startsWith('|') &&
+        nextLine.endsWith('|') &&
+        /^[|\s\-:]+$/.test(nextLine) &&
+        nextLine.includes('---');
+
+      if (hasPipes && isNextSeparator) {
+        if (textBuffer.length > 0) {
+          blocks.push({ type: 'text', content: textBuffer.join('\n') });
+          textBuffer = [];
+        }
+
+        const tableRows: string[][] = [];
+        const headerCells = trimmed.slice(1, -1).split('|').map((c) => c.trim());
+        tableRows.push(headerCells);
+
+        i += 2; // Lewati baris header dan separator
+
+        while (i < lines.length) {
+          const rowTrim = lines[i].trim();
+          if (rowTrim.startsWith('|') && rowTrim.endsWith('|') && rowTrim.length > 2) {
+            const cells = rowTrim.slice(1, -1).split('|').map((c) => c.trim());
+            tableRows.push(cells);
+            i++;
+          } else {
+            break;
+          }
+        }
+
+        blocks.push({ type: 'table', content: tableRows });
+        continue;
+      }
+
+      textBuffer.push(line);
+      i++;
+    }
+
+    if (textBuffer.length > 0) {
+      blocks.push({ type: 'text', content: textBuffer.join('\n') });
+    }
+
+    return blocks;
+  };
+
+  const renderContent = (content: string) => {
+    if (isUser) {
+      return <div className="whitespace-pre-wrap">{content}</div>;
+    }
+
+    const blocks = parseBlocks(content);
+
+    return (
+      <div className="space-y-3">
+        {blocks.map((block, bIdx) => {
+          if (block.type === 'table') {
+            const rows = block.content as string[][];
+            return (
+              <div
+                key={`tbl-${bIdx}`}
+                className="overflow-x-auto my-3 rounded-xl border border-slate-200 bg-white shadow-xs max-w-full"
+              >
+                <table className="w-full border-collapse text-[13px] text-left">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-800 font-bold">
+                      {rows[0].map((th, thIdx) => (
+                        <th
+                          key={thIdx}
+                          className="px-3.5 py-2.5 font-bold tracking-tight border-r last:border-r-0 border-slate-200 whitespace-nowrap"
+                        >
+                          {renderInline(th, `th-${bIdx}-${thIdx}`)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {rows.slice(1).map((row, rIdx) => (
+                      <tr
+                        key={rIdx}
+                        className={rIdx % 2 === 1 ? 'bg-slate-50/50 hover:bg-blue-50/30' : 'bg-white hover:bg-blue-50/30'}
+                      >
+                        {row.map((cell, cIdx) => (
+                          <td
+                            key={cIdx}
+                            className={`px-3.5 py-2.5 align-top leading-relaxed border-r last:border-r-0 border-slate-100 ${
+                              cIdx === 0 ? 'font-semibold text-slate-900 bg-slate-50/30 whitespace-nowrap' : ''
+                            }`}
+                          >
+                            {renderInline(cell, `td-${bIdx}-${rIdx}-${cIdx}`)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          }
+
+          return (
+            <div key={`txt-${bIdx}`} className="whitespace-pre-wrap leading-relaxed">
+              {renderInline(block.content as string, `blk-${bIdx}`)}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -138,7 +266,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         )}
 
         {/* Message Content (Pure React text rendering, safe from script injection) */}
-        <div className="whitespace-pre-wrap">{renderContent(message.content)}</div>
+        <div>{renderContent(message.content)}</div>
 
         {/* Action: Retry if service error */}
         {!isUser && message.status === 'service_unavailable' && onRetry && (

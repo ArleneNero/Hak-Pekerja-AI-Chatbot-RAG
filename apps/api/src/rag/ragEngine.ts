@@ -502,6 +502,9 @@ export async function executeRagQuery(
       }
       return fullMatch;
     });
+
+    // 3. Rapikan spasi sebelum tanda baca (misal "[Rujukan 1] ." menjadi "[Rujukan 1].")
+    formattedAnswer = formattedAnswer.replace(/(\[\s*Rujukan\s*\d+[^\]]*\])\s+([.,;:])/gi, '$1$2');
   } else {
     // Jika tidak ada sitasi eksplisit yang dikutip (misal ringkasan),
     // sertakan kandidat teratas dan beri label ramah "Rujukan 1", "Rujukan 2", ...
