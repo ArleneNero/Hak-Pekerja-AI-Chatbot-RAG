@@ -21,6 +21,23 @@ export function initializeFirebaseAdmin(): App | null {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     const projectId = process.env.FIREBASE_PROJECT_ID || config.firebaseProjectId;
 
+    // 0. Base64 encoded Service Account JSON (Paling aman untuk cloud / Vercel env)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+      try {
+        const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64.trim(), 'base64').toString('utf8');
+        const parsedAccount: ServiceAccount = JSON.parse(decoded);
+        app = initializeApp({
+          credential: cert(parsedAccount),
+          projectId: parsedAccount.projectId || projectId,
+        });
+        isConfiguredWithCredentials = true;
+        console.log('[FirebaseAdmin] Initialized successfully with Base64 Service Account JSON.');
+        return app;
+      } catch (b64Err) {
+        console.error('[FirebaseAdmin] Failed to decode FIREBASE_SERVICE_ACCOUNT_BASE64:', b64Err);
+      }
+    }
+
     // 1. Service account JSON file or string
     let resolvedPath: string | null = null;
     if (serviceAccountJson) {
