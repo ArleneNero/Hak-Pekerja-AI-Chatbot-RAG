@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Scale, RotateCw } from 'lucide-react';
+import { Scale, Loader2 } from 'lucide-react';
 import { ChatMessage, LegalSource } from '@/types/chat';
 import { sendQueryToRag } from '@/services/apiClient';
 import { LegalSourceModal } from '@/features/legal-source/LegalSourceModal';
@@ -21,7 +21,11 @@ export const ChatPage: React.FC = () => {
   const [conversationTitle, setConversationTitle] = useState<string>('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Pisahkan state: isGenerating (khusus AI membuat jawaban) vs isLoadingSession (khusus memuat riwayat lama)
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+
   const [selectedSources, setSelectedSources] = useState<LegalSource[]>([]);
   const [highlightedSourceLabel, setHighlightedSourceLabel] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,6 +33,7 @@ export const ChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const hasSentInitialQueryRef = useRef(false);
+  const skipNextHistoryLoadRef = useRef<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,7 +41,7 @@ export const ChatPage: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isGenerating]);
 
   // Load existing conversation if ?id=... is present
   useEffect(() => {
@@ -51,31 +56,39 @@ export const ChatPage: React.FC = () => {
       return;
     }
 
-    if (activeId && activeId !== conversationId) {
-      const loadSavedSession = async () => {
-        if (!user) return;
-        setIsLoading(true);
-        try {
-          const token = await getIdToken();
-          const detail = await historyService.getConversation(activeId, user.uid, token);
-          if (detail) {
-            setConversationId(detail.id);
-            setConversationTitle(detail.title);
-            setMessages(detail.messages || []);
-          }
-        } catch {
-          // Keep current state on fetch failure
-        } finally {
-          setIsLoading(false);
-        }
-      };
+    if (activeId) {
+      // Jika ID baru saja disimpan dari sesi chat yang baru selesai di-generate, cegah fetch ulang!
+      if (skipNextHistoryLoadRef.current === activeId) {
+        skipNextHistoryLoadRef.current = null;
+        return;
+      }
 
-      loadSavedSession();
+      if (activeId !== conversationId) {
+        const loadSavedSession = async () => {
+          if (!user) return;
+          setIsLoadingSession(true);
+          try {
+            const token = await getIdToken();
+            const detail = await historyService.getConversation(activeId, user.uid, token);
+            if (detail) {
+              setConversationId(detail.id);
+              setConversationTitle(detail.title);
+              setMessages(detail.messages || []);
+            }
+          } catch {
+            // Keep current state on fetch failure
+          } finally {
+            setIsLoadingSession(false);
+          }
+        };
+
+        loadSavedSession();
+      }
     }
   }, [searchParams, user, getIdToken, conversationId, setSearchParams]);
 
   const handleSendMessage = useCallback(async (queryText: string) => {
-    if (!queryText.trim() || isSendingRef.current || isLoading) return;
+    if (!queryText.trim() || isSendingRef.current || isGenerating || isLoadingSession) return;
     isSendingRef.current = true;
 
     const userMsg: ChatMessage = {
@@ -88,7 +101,7 @@ export const ChatPage: React.FC = () => {
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInputText('');
-    setIsLoading(true);
+    setIsGenerating(true);
 
     const startTime = Date.now();
 
@@ -134,9 +147,11 @@ export const ChatPage: React.FC = () => {
         await historyService.saveConversation(detail, user.uid, token);
 
         if (!conversationId) {
+          // Kunci ID ini agar useEffect tidak memicu loadSavedSession lagi setelah AI menjawab
+          skipNextHistoryLoadRef.current = currentConvId;
           setConversationId(currentConvId);
           setConversationTitle(title);
-          setSearchParams({ id: currentConvId });
+          setSearchParams({ id: currentConvId }, { replace: true });
         }
       }
     } catch (err: unknown) {
@@ -184,10 +199,10 @@ export const ChatPage: React.FC = () => {
 
       setMessages((prev) => [...prev, failureMsg]);
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
       isSendingRef.current = false;
     }
-  }, [isLoading, messages, user, getIdToken, conversationId, conversationTitle, setSearchParams]);
+  }, [isGenerating, isLoadingSession, messages, user, getIdToken, conversationId, conversationTitle, setSearchParams]);
 
   // Handle draft question from home page via ?q=... (with one-shot ref lock to prevent duplicate execution)
   useEffect(() => {
@@ -219,7 +234,7 @@ export const ChatPage: React.FC = () => {
     navigate(ROUTES.CHAT);
   };
 
-  const isEmptyState = messages.length === 0 && !isLoading;
+  const isEmptyState = messages.length === 0 && !isGenerating && !isLoadingSession;
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-figma-canvas relative overflow-hidden">
@@ -234,59 +249,69 @@ export const ChatPage: React.FC = () => {
             : 'overflow-y-auto space-y-6 overscroll-contain'
         }`}
       >
-        {isEmptyState && (
-          <div className="flex flex-col items-center justify-center text-center p-4 text-figma-muted max-w-sm mx-auto my-auto select-none pointer-events-none">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 flex items-center justify-center">
-              <img
-                src="/assets/document-hint.png"
-                alt="Pertanyaan Regulasi HakKetenagakerjaan"
-                className="w-full h-full object-contain select-none drop-shadow-xs"
-              />
-            </div>
-            <h3 className="text-[15px] sm:text-base font-bold text-figma-dark mb-1.5 leading-snug">
-              Apa yang ingin Anda tanyakan seputar hak ketenagakerjaan?
-            </h3>
-            <p className="text-[12px] sm:text-xs text-figma-body leading-relaxed max-w-xs">
-              Ketik pertanyaan tentang PKWT/PKWTT, uang lembur, pesangon PHK, perhitungan cuti atau THR di bawah.
-            </p>
+        {isLoadingSession ? (
+          /* Spinner halus saat memuat riwayat percakapan dari database */
+          <div className="flex flex-col items-center justify-center py-16 text-[#7D8DA8] space-y-2.5 my-auto animate-in fade-in duration-200 select-none">
+            <Loader2 className="w-6 h-6 animate-spin text-[#285CF5]" />
+            <span className="text-[12.5px] font-medium text-[#42506A]">Memuat riwayat percakapan...</span>
           </div>
+        ) : (
+          <>
+            {isEmptyState && (
+              <div className="flex flex-col items-center justify-center text-center p-4 text-figma-muted max-w-sm mx-auto my-auto select-none pointer-events-none">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 flex items-center justify-center">
+                  <img
+                    src="/assets/document-hint.png"
+                    alt="Pertanyaan Regulasi HakKetenagakerjaan"
+                    className="w-full h-full object-contain select-none drop-shadow-xs"
+                  />
+                </div>
+                <h3 className="text-[15px] sm:text-base font-bold text-figma-dark mb-1.5 leading-snug">
+                  Apa yang ingin Anda tanyakan seputar hak ketenagakerjaan?
+                </h3>
+                <p className="text-[12px] sm:text-xs text-figma-body leading-relaxed max-w-xs">
+                  Ketik pertanyaan tentang PKWT/PKWTT, uang lembur, pesangon PHK, perhitungan cuti atau THR di bawah.
+                </p>
+              </div>
+            )}
+
+            {messages.map((msg, index) => {
+              const prevUserMsg = msg.role !== 'user'
+                ? [...messages.slice(0, index)].reverse().find((m) => m.role === 'user')
+                : null;
+
+              return (
+                <ChatBubble
+                  key={msg.id}
+                  message={msg}
+                  onOpenSources={handleOpenSources}
+                  onRetry={prevUserMsg ? () => handleSendMessage(prevUserMsg.content) : undefined}
+                />
+              );
+            })}
+
+            {/* Indikator Halus: Saat AI/LLM sedang menyusun jawaban */}
+            {isGenerating && (
+              <div className="flex items-start gap-3 max-w-3xl mr-auto animate-in fade-in duration-200">
+                <div className="w-8 h-8 rounded-xl bg-white border border-[#E8EDF4] text-[#285CF5] flex items-center justify-center flex-shrink-0 shadow-xs">
+                  <Scale size={16} />
+                </div>
+                <div className="bg-white rounded-2xl rounded-tl-none border border-[#E8EDF4] px-4.5 py-3.5 shadow-xs flex items-center gap-2.5 text-[13.5px] text-[#42506A]">
+                  <Loader2 size={16} className="animate-spin text-[#285CF5]" />
+                  <span className="font-medium">Sedang menyusun jawaban...</span>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </>
         )}
-
-        {messages.map((msg, index) => {
-          const prevUserMsg = msg.role !== 'user'
-            ? [...messages.slice(0, index)].reverse().find((m) => m.role === 'user')
-            : null;
-
-          return (
-            <ChatBubble
-              key={msg.id}
-              message={msg}
-              onOpenSources={handleOpenSources}
-              onRetry={prevUserMsg ? () => handleSendMessage(prevUserMsg.content) : undefined}
-            />
-          );
-        })}
-
-        {/* Real Loading Indicator */}
-        {isLoading && (
-          <div className="flex items-start gap-3 max-w-3xl mr-auto animate-in fade-in duration-200">
-            <div className="w-8 h-8 rounded-xl bg-white border border-[#E8EDF4] text-[#285CF5] flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Scale size={16} />
-            </div>
-            <div className="bg-white rounded-2xl rounded-tl-none border border-[#E8EDF4] px-5 py-4 shadow-sm flex items-center gap-3 text-[13.5px] text-[#42506A]">
-              <RotateCw size={17} className="animate-spin text-[#285CF5]" />
-              <span className="font-medium">Sedang menyusun jawaban...</span>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* 3. Sticky Composer Bar (Selalu terlihat langsung di bagian bawah layar) */}
       <ChatComposer
         inputText={inputText}
-        isLoading={isLoading}
+        isLoading={isGenerating || isLoadingSession}
         onInputChange={setInputText}
         onSubmit={handleFormSubmit}
       />
