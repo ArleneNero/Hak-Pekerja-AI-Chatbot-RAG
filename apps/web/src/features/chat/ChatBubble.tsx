@@ -290,18 +290,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
 
         {/* Assistant Legal Source Citation Button */}
         {!isUser && message.sources && message.sources.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center">
             <button
               onClick={() => onOpenSources(message.sources)}
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[#F5F8FF] hover:bg-[#EEF4FF] active:scale-[0.98] text-[#285CF5] font-bold text-[12px] border border-[#D5E2FF] hover:border-[#285CF5]/40 transition-all shadow-2xs shrink-0 self-start sm:self-auto"
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[#F5F8FF] hover:bg-[#EEF4FF] active:scale-[0.98] text-[#285CF5] font-bold text-[12px] border border-[#D5E2FF] hover:border-[#285CF5]/40 transition-all shadow-2xs"
             >
               <BookOpen size={14} className="shrink-0 text-[#285CF5]" />
               <span>Lihat Sumber ({message.sources.length} rujukan resmi)</span>
             </button>
-            <span className="text-[11px] text-figma-muted sm:text-right flex items-center gap-1.5 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0" />
-              <span>Tautan JDIH BPK/Kemnaker</span>
-            </span>
           </div>
         )}
       </div>
