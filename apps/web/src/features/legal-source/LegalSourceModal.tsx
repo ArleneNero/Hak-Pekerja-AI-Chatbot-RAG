@@ -67,7 +67,7 @@ export const LegalSourceModal: React.FC<LegalSourceModalProps> = ({
                 Rujukan Regulasi Resmi
               </h2>
               <p className="text-[12px] text-[#7D8DA8]">
-                {sources.length} kutipan pasal hukum yang diverifikasi
+                {sources.length} sumber yang diverifikasi
               </p>
             </div>
           </div>
@@ -157,11 +157,10 @@ export const LegalSourceModal: React.FC<LegalSourceModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 bg-[#F7FAFF] border-t border-[#E8EDF4] flex items-center justify-between text-[11.5px] text-[#7D8DA8]">
-          <span>Data terintegrasi JDIH Kemnaker & JDIH BPK RI</span>
+        <div className="px-6 py-3.5 bg-[#F7FAFF] border-t border-[#E8EDF4] flex items-center justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-white border border-[#E8EDF4] text-[#1D2737] font-semibold hover:bg-gray-50 transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-white border border-[#E8EDF4] text-[#1D2737] font-semibold hover:bg-gray-50 transition-colors text-xs"
           >
             Tutup
           </button>
