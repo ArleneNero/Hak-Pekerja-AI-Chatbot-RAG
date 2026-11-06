@@ -14,6 +14,7 @@ import { type User } from 'firebase/auth';
 import { ROUTES } from '@/constants/routes';
 import type { ConversationSummary } from '@/types/history';
 import type { AuthMode } from '@/features/account/AuthModal';
+import { stripMarkdown } from '@/utils/formatters';
 
 interface DesktopSidebarProps {
   user: User | null;
@@ -127,7 +128,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
                   className="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-figma-body hover:bg-figma-primary-soft hover:text-figma-primary transition-colors group"
                 >
                   <MessageSquare size={14} className="shrink-0 text-figma-muted group-hover:text-figma-primary" />
-                  <span className="truncate">{item.title}</span>
+                  <span className="truncate">{stripMarkdown(item.title)}</span>
                 </button>
               ))}
             </div>

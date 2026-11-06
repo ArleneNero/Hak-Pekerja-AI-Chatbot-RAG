@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, Trash2, ArrowRight, Loader2 } from 'lucide-react';
 import { ConversationSummary } from '@/types/history';
+import { stripMarkdown } from '@/utils/formatters';
 
 interface HistoryCardProps {
   conversation: ConversationSummary;
@@ -38,7 +39,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-sm font-bold text-figma-dark group-hover:text-figma-primary transition-colors truncate">
-            {conversation.title}
+            {stripMarkdown(conversation.title)}
           </h3>
           {conversation.topic && (
             <span className="px-2 py-0.5 rounded-full bg-figma-primary-soft text-figma-primary text-[10px] font-semibold shrink-0">
@@ -49,7 +50,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
 
         {conversation.lastMessage && (
           <p className="text-xs text-figma-body line-clamp-1 mb-2">
-            {conversation.lastMessage}
+            {stripMarkdown(conversation.lastMessage)}
           </p>
         )}
 

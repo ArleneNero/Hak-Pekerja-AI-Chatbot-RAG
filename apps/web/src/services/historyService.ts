@@ -1,4 +1,5 @@
 import type { ConversationSummary, ConversationDetail } from '@/types/history';
+import { stripMarkdown } from '@/utils/formatters';
 
 const rawBase = (import.meta.env.VITE_API_BASE_URL || '').trim();
 const API_BASE_URL = rawBase
@@ -49,7 +50,11 @@ class HistoryService {
 
         if (response.ok) {
           const data = await response.json();
-          remoteList = data.conversations || [];
+          remoteList = (data.conversations || []).map((item: ConversationSummary) => ({
+            ...item,
+            title: stripMarkdown(item.title),
+            lastMessage: stripMarkdown(item.lastMessage),
+          }));
         }
       } catch (err) {
         console.warn('[HistoryService] Failed to fetch remote conversations:', err);
@@ -60,11 +65,11 @@ class HistoryService {
     const local = this.getLocalConversations(userId);
     const localSummaries: ConversationSummary[] = local.map((c) => ({
       id: c.id,
-      title: c.title,
+      title: stripMarkdown(c.title),
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
       messageCount: c.messages.length,
-      lastMessage: c.messages[c.messages.length - 1]?.content || '',
+      lastMessage: stripMarkdown(c.messages[c.messages.length - 1]?.content || ''),
       topic: c.topic,
     }));
 

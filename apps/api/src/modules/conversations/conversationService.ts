@@ -48,6 +48,24 @@ function sanitizeForFirestore<T extends Record<string, any>>(obj: T): T {
   return result;
 }
 
+// Helper to strip markdown and citation markers from conversation title and lastMessage preview
+function cleanPlainSnippet(text?: string | null): string {
+  if (!text) return '';
+  return text
+    .replace(/\[(?:Rujukan|S)\s*\d+[^\]]*\]/gi, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^>\s+/gm, '')
+    .replace(/^[\s*+-]+\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/\*+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export class ConversationService {
   private getDb() {
     return getFirestoreDb();
@@ -140,16 +158,18 @@ export class ConversationService {
     topic?: string
   ): Promise<ConversationDocument> {
     const now = new Date().toISOString();
-    const lastMsg = messages[messages.length - 1]?.content || '';
+    const rawLastMsg = messages[messages.length - 1]?.content || '';
+    const cleanLastMsg = cleanPlainSnippet(rawLastMsg);
+    const cleanTitle = cleanPlainSnippet(title) || (cleanLastMsg.slice(0, 45) + '...');
 
     const summary: ConversationDocument = {
       id: conversationId,
       userId,
-      title: title || (lastMsg.slice(0, 40) + '...'),
+      title: cleanTitle,
       createdAt: now,
       updatedAt: now,
       messageCount: messages.length,
-      lastMessage: lastMsg,
+      lastMessage: cleanLastMsg,
       topic: topic || '',
     };
 

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HakPekerja.AI — Hasil Pengujian Akurasi RAG (7 Kasus)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      line-height: 1.5;
+      padding: 24px;
+    }
+    .container { max-width: 1380px; margin: 0 auto; }
+    .header {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .header h1 { font-size: 19px; font-weight: 700; color: #1e3a8a; margin-bottom: 4px; }
+    .header p { font-size: 13px; color: #64748b; }
+    .meta-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .badge-success { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+
+    /* SUMMARY TABLE (VERBATIM LLM RESPONSE) */
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #334155;
+      margin: 20px 0 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-container {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      margin-bottom: 32px;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      padding: 11px 14px;
+      border-bottom: 2px solid #cbd5e1;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.03em;
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    tr:nth-child(even) { background: #fafafa; }
+    tr:last-child td { border-bottom: none; }
+    .tag {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .tag-green { background: #dcfce7; color: #15803d; }
+    .tag-blue { background: #e0e7ff; color: #3730a3; }
+    
+    /* LLM ANSWER STYLING IN TABLE */
+    .llm-cell { font-size: 12px; color: #1e293b; line-height: 1.55; }
+    .llm-cell ul { margin: 4px 0 6px 16px; }
+    .llm-cell li { margin-bottom: 4px; }
+    .citation {
+      font-weight: 700;
+      color: #1d4ed8;
+      background: #eff6ff;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10.5px;
+      border: 1px solid #bfdbfe;
+      white-space: nowrap;
+    }
+    .disclaimer { font-size: 10.5px; color: #64748b; font-style: italic; margin-top: 6px; }
+
+    @media print {
+      body { padding: 0; background: white; }
+      .header, .table-container { box-shadow: none; border-color: #cbd5e1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- HEADER -->
+    <div class="header">
+      <h1>HakPekerja.AI — Hasil Pengujian Akurasi Regulasi Ketenagakerjaan</h1>
+      <p>Platform: <strong>Embedded RAG Native Node.js</strong> (Vercel Production) | Evaluasi: <strong>7 Kasus Terverifikasi (Jawaban Asli LLM & Sitasi Regulasi)</strong></p>
+      <div class="meta-badges">
+        <span class="badge badge-success">✓ 7/7 Kasus PASS (ANSWERED)</span>
+        <span class="badge">Model: deepseek-v4.1-flash</span>
+        <span class="badge">Embedding: BAAI/bge-m3 (1024-dim)</span>
+        <span class="badge">Database Vektor: Qdrant Cloud (6.394 Vektor)</span>
+        <span class="badge">Reranking: Adaptive Top-K & Citation Re-indexing</span>
+      </div>
+    </div>
+
+    <!-- 1-SCREENSHOT MASTER SUMMARY TABLE WITH VERBATIM LLM RESPONSE -->
+    <div class="section-title">
+      <span>📊 Tabel Matriks Hasil Pengujian Aktual (Jawaban Asli Model LLM Berdasarkan Bukti Regulasi)</span>
+      <span style="font-size: 11.5px; font-weight: normal; color: #64748b;">Format pas untuk 1 Screenshot Layar Monitor</span>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 35px; text-align: center;">No</th>
+            <th style="width: 140px;">Kasus / Topik</th>
+            <th style="width: 230px;">Pertanyaan Uji</th>
+            <th style="width: 75px; text-align: center;">Latensi</th>
+            <th style="width: 220px;">Rujukan Regulasi Terverifikasi</th>
+            <th>Hasil Jawaban & Perhitungan Asli LLM (Tervalidasi Sitasi)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- ROW 1 -->
+          <tr>
+            <td style="text-align: center; font-weight: bold;">1</td>
+            <td><strong>PKWT vs PKWTT</strong><br><span class="tag tag-green">ANSWERED</span></td>
+            <td>Jelaskan perbedaan PKWT dan PKWTT. Jika PKWT berakhir sesuai masa kontrak, apakah pekerja berhak mendapatkan uang kompensasi?</td>
+            <td style="text-align: center;"><span class="tag tag-blue">9.20s</span></td>
+            <td>
+              • PP 35/2021 Hal. 43 (Penjelasan)<br>
+              • PP 35/2021 Pasal 8 (Batas Waktu)<br>
+              • PP 35/2021 Pasal 15 (Hak Kompensasi)<br>
+              • PP 35/2021 Pasal 16 (Rumus Perhitungan)<br>
+              • PP 35/2021 Pasal 17 (Berakhirnya PKWT)
+            </td>
+            <td class="llm-cell">
+              <ul>
+                <li><strong>Definisi & Sifat:</strong> PKWT didasarkan atas jangka waktu atau selesainya suatu pekerjaan tertentu <span class="citation">[Rujukan 1]</span>, dan tidak dapat diadakan untuk pekerjaan yang bersifat tetap.</li>
+                <li><strong>Jangka Waktu:</strong> PKWT paling lama 5 tahun, termasuk bila dilakukan perpanjangan kontrak (total akumulasi tidak melebihi 5 tahun) <span class="citation">[Rujukan 2]</span>.</li>
+                <li><strong>Uang Kompensasi:</strong> <strong>Ya, pekerja berhak atas uang kompensasi</strong> saat berakhirnya masa kontrak <span class="citation">[Rujukan 3]</span>. Syaratnya memiliki masa kerja minimal 1 bulan terus-menerus <span class="citation">[Rujukan 3]</span>.</li>
+                <li><strong>Rumus Besaran:</strong> Masa kerja 12 bulan = 1 bulan upah; masa kerja kurang/lebih dari 12 bulan dihitung proporsional: <strong>(Masa Kerja / 12) × 1 Bulan Upah</strong> <span class="citation">[Rujukan 4]</span>.</li>
+              </ul>
+              <div class="disclaimer">Informasi umum, bukan nasihat hukum profesional.</div>
+            </td>
+          </tr>
+
+          <!-- ROW 2 -->
+          <tr>
+            <td style="text-align: center; font-weight: bold;">2</td>
+            <td><strong>Upah di Bawah UMP</strong><br><span class="tag tag-green">ANSWERED</span></td>
+            <td>Apa hak pekerja apabila menerima upah di bawah upah minimum yang berlaku di wilayah tempat kerjanya? Jelaskan juga ketentuan mengenai pembayaran upah.</td>
+            <td style="text-align: center;"><span class="tag tag-blue">8.26s</span></td>
+            <td>
+              • PP 36/2021 Pasal 23 & 79<br>
+              • PP 51/2023 Pasal 23<br>
+              • PP 36/2021 Pasal 53 (Mata Uang)<br>
+              • PP 36/2021 Pasal 55 & 57 (Jadwal & Denda)
+            </td>
+            <td class="llm-cell">
+              <ul>
+                <li><strong>Larangan Upah di Bawah Minimum:</strong> Pengusaha dilarang membayar upah lebih rendah dari upah minimum <span class="citation">[Rujukan 1]</span>. Upah minimum berlaku untuk masa kerja &lt; 1 tahun <span class="citation">[Rujukan 2]</span>, sedangkan pekerja ≥ 1 tahun berpedoman pada struktur dan skala upah <span class="citation">[Rujukan 2]</span>.</li>
+                <li><strong>Ketentuan Pembayaran:</strong> Wajib dibayar dalam mata uang Rupiah <span class="citation">[Rujukan 3]</span>, dibayarkan pada periode yang diperjanjikan (seminggu sekali atau sebulan sekali) <span class="citation">[Rujukan 4]</span>.</li>
+                <li><strong>Bukti Upah (Slip Gaji):</strong> Pengusaha wajib memberikan bukti pembayaran upah yang memuat rincian upah saat dibayarkan <span class="citation">[Rujukan 4]</span>.</li>
+                <li><strong>Denda Keterlambatan:</strong> Keterlambatan mulai hari ke-4 dikenakan denda bertahap sampai dengan bunga bank <span class="citation">[Rujukan 5]</span>.</li>
+              </ul>
+              <div class="disclaimer">Informasi umum, bukan nasihat hukum profesional.</div>
+            </td>
+          </tr>
+
+          <!-- ROW 3 -->
+          <tr>
+            <td style="text-align: center; font-weight: bold;">3</td>
+            <td><strong>Perhitungan Lembur</strong><br><span class="tag tag-green">ANSWERED</span></td>
+            <td>Saya bekerja dengan sistem 5 hari kerja, menerima upah bulanan Rp4.500.000, dan melakukan lembur selama 1 jam pada hari kerja biasa. Berapa estimasi upah lembur saya dan bagaimana perhitungannya?</td>
+            <td style="text-align: center;"><span class="tag tag-blue">8.44s</span></td>
+            <td>
+              • PP 35/2021 Pasal 32 (Upah Sejam)<br>
+              • PP 35/2021 Pasal 31 (Tarif Lembur)<br>
+              • PP 35/2021 Pasal 26 (Batas Waktu)
+            </td>
+            <td class="llm-cell">
+              <ul>
+                <li><strong>1. Upah Per Jam:</strong> Rumus = 1/173 × Upah Sebulan <span class="citation">[Rujukan 1]</span>.<br>
+                = 1/173 × Rp4.500.000 = <strong>Rp26.011,56</strong> per jam.</li>
+                <li><strong>2. Tarif Lembur Hari Kerja Biasa:</strong> Jam pertama dibayar sebesar <strong>1,5 kali upah sejam</strong> <span class="citation">[Rujukan 2]</span>.</li>
+                <li><strong>3. Hasil Estimasi (1 Jam Lembur):</strong><br>
+                = 1,5 × Rp26.011,56 = <strong>Rp39.017,34</strong> (dibulatkan menjadi <strong>Rp39.017</strong>).</li>
+                <li><strong>Batas Maksimal:</strong> Lembur paling banyak 4 jam/hari dan 18 jam/minggu <span class="citation">[Rujukan 4]</span>.</li>
+              </ul>
+              <div class="disclaimer">Informasi umum, bukan nasihat hukum profesional.</div>
+            </td>
+          </tr>
+
+          <!-- ROW 4 -->
+          <tr>
+            <td style="text-align: center; font-weight: bold;">4</td>
+            <td><strong>Cuti Tahunan & Ibu</strong><br><span class="tag tag-green">ANSWERED</span></td>
+            <td>Berapa lama hak cuti tahunan pekerja setelah bekerja selama 12 bulan secara terus-menerus? Apakah pekerja perempuan juga memiliki hak cuti melahirkan?</td>
+            <td style="text-align: center;"><span class="tag tag-blue">7.74s</span></td>
+            <td>
+              • UU 6/2023 Pasal 79 (Cuti Tahunan)<br>
+              • UU 4/2024 (KIA) Pasal 4 (Cuti Ibu)<br>
+              • UU 4/2024 (KIA) Pasal 5 (Hak Upah Cuti)
+            </td>
+            <td class="llm-cell">
+              <ul>
+                <li><strong>Cuti Tahunan:</strong> Pekerja yang telah bekerja selama 12 bulan terus-menerus berhak atas cuti tahunan <strong>paling sedikit 12 hari kerja</strong> <span class="citation">[Rujukan 1]</span>.</li>
+                <li><strong>Hak Cuti Melahirkan:</strong> <strong>Ya, pekerja perempuan berhak</strong> atas cuti melahirkan yang wajib diberikan oleh pemberi kerja <span class="citation">[Rujukan 2]</span>.</li>
+                <li><strong>Durasi Cuti Melahirkan (UU KIA 4/2024):</strong><br>
+                a. Paling singkat <strong>3 bulan</strong> pertama <span class="citation">[Rujukan 2]</span>.<br>
+                b. Dapat diperpanjang paling lama <strong>3 bulan berikutnya</strong> jika terdapat kondisi khusus dengan surat keterangan dokter <span class="citation">[Rujukan 2]</span> (total s.d. <strong>6 bulan</strong>).</li>
+                <li><strong>Upah Cuti Melahirkan:</strong> Tetap dibayar 100% untuk 3 bulan pertama &amp; bulan ke-4, serta 75% untuk bulan ke-5 &amp; ke-6 <span class="citation">[Rujukan 3]</span>.</li>
+              </ul>
+              <div class="disclaimer">Informasi umum, bukan nasihat hukum profesional.</div>
+            </td>
+          </tr>
+
+          <!-- ROW 5 -->
+          <tr>
+            <td style="text-align: center; font-weight: bold;">5</td>
+            <td><strong>Perhitungan THR</strong><br><span class="tag tag-green">ANSWERED</span></td>
+            <td>Saya telah bekerja selama 6 bulan secara terus-menerus dengan upah bulanan Rp4.500.000. Berapa estimasi THR yang saya terima dan bagaimana perhitungannya?</td>
+            <td style="text-align: center;"><span class="tag tag-blue">7.35s</span></td>
+            <td>
+              • Permenaker 6/2016 Pasal 2 (Kewajiban)<br>
+              • Permenaker 6/2016 Pasal 3 (Rumus Proporsional)<br>
+              • Permenaker 6/2016 Pasal 5 (Batas Waktu H-7)
+            </td>
+            <td class="llm-cell">
+              <ul>
+                <li><strong>Hak THR Proporsional:</strong> Pekerja dengan masa kerja ≥ 1 bulan tetapi &lt; 12 bulan berhak atas THR secara proporsional <span class="citation">[Rujukan 1][Rujukan 2]</span>.</li>
+                <li><strong>Rumus:</strong> (Masa Kerja / 12) × 1 Bulan Upah <span class="citation">[Rujukan 2]</span>.</li>
+                <li><strong>Perhitungan Estimasi:</strong><br>
+                = (6 / 12) × Rp4.500.000<br>
+                = 1/2 × Rp4.500.000 = <strong>Rp2.250.000</strong> <span class="citation">[Rujukan 2]</span>.</li>
+                <li><strong>Jadwal Pembayaran:</strong> Wajib dibayarkan oleh pengusaha paling lambat <strong>7 hari sebelum Hari Raya Keagamaan</strong> <span class="citation">[Rujukan 3]</span>.</li>
+              </ul>
+              <div class="disclaimer">Informasi umum, bukan nasihat hukum profesional.</div>
+            </td>
+          </tr>
+
+          <!-- ROW 6 -->
+          <tr>
+            <td style="text-align: center; font-weight: bold;">6</td>
+            <td><strong>Hak Akibat PHK</strong><br><span class="tag tag-green">ANSWERED</span></td>
+            <td>Saya telah bekerja selama 3 tahun dan mengalami PHK. Apa saja hak yang perlu diperhitungkan, termasuk uang pesangon, uang penghargaan masa kerja, dan uang penggantian hak?</td>
+            <td style="text-align: center;"><span class="tag tag-blue">6.26s</span></td>
+            <td>
+              • UU 6/2023 Pasal 156 (Pesangon, UPMK, UPH)<br>
+              • PP 35/2021 Pasal 40 (Standar Perhitungan)<br>
+              • PP 35/2021 Pasal 41–55 (Faktor Pengali Alasan)
+            </td>
+            <td class="llm-cell">
+              <ul>
+                <li><strong>1. Uang Pesangon:</strong> Masa kerja 3 tahun atau lebih tetapi kurang dari 4 tahun = <strong>4 bulan Upah</strong> <span class="citation">[Rujukan 1 Pasal 156(2)d]</span>.</li>
+                <li><strong>2. Uang Penghargaan Masa Kerja (UPMK):</strong> Masa kerja 3 tahun atau lebih tetapi kurang dari 6 tahun = <strong>2 bulan Upah</strong> <span class="citation">[Rujukan 1 Pasal 156(3)a]</span>.</li>
+                <li><strong>3. Uang Penggantian Hak (UPH):</strong> Cuti tahunan yang belum diambil/belum gugur, ongkos pulang ke tempat penerimaan kerja, dan hal lain dalam perjanjian kerja <span class="citation">[Rujukan 1 Pasal 156(4)]</span>.</li>
+                <li><strong>Total Dasar:</strong> <strong>6 bulan Upah + UPH</strong> (nilai riil dapat dikalikan faktor tertentu 0,5x s.d. 2x bergantung alasan spesifik PHK) <span class="citation">[Rujukan 2]</span>.</li>
+              </ul>
+              <div class="disclaimer">Informasi umum, bukan nasihat hukum profesional.</div>
+            </td>
+          </tr>
+
+          <!-- ROW 7 -->
+          <tr>
+            <td style="text-align: center; font-weight: bold;">7</td>
+            <td><strong>Program JKP</strong><br><span class="tag tag-green">ANSWERED</span></td>
+            <td>Siapa yang secara umum dapat memperoleh manfaat JKP setelah mengalami PHK, dan apa saja manfaat yang diberikan program tersebut?</td>
+            <td style="text-align: center;"><span class="tag tag-blue">6.22s</span></td>
+            <td>
+              • PP 6/2025 Pasal 19 (Penerima Manfaat)<br>
+              • PP 37/2021 Pasal 1 &amp; 19 (Ketentuan Umum)<br>
+              • PP 6/2025 Pasal 20 &amp; 21 (Manfaat &amp; Pengecualian)
+            </td>
+            <td class="llm-cell">
+              <ul>
+                <li><strong>Penerima Manfaat:</strong> Pekerja/Buruh peserta BPJS Ketenagakerjaan (PKWT maupun PKWTT) yang mengalami PHK dan berkomitmen bersedia bekerja kembali <span class="citation">[Rujukan 1]</span>. Syarat: masa iur minimal 12 bulan dalam 24 bulan sebelum PHK <span class="citation">[Rujukan 1]</span>.</li>
+                <li><strong>Pengecualian:</strong> Tidak berlaku jika PHK karena mengundurkan diri (resign), pensiun, cacat total tetap, atau meninggal dunia <span class="citation">[Rujukan 5]</span>.</li>
+                <li><strong>3 Manfaat JKP:</strong><br>
+                1. <strong>Uang Tunai:</strong> 60% upah selama maksimal 6 bulan (sesuai PP 6/2025 Pasal 21) <span class="citation">[Rujukan 4]</span>.<br>
+                2. <strong>Akses Informasi Pasar Kerja</strong> <span class="citation">[Rujukan 3]</span>.<br>
+                3. <strong>Pelatihan Kerja Berbasis Kompetensi</strong> <span class="citation">[Rujukan 3]</span>.</li>
+              </ul>
+              <div class="disclaimer">Informasi umum, bukan nasihat hukum profesional.</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</body>
+</html>
