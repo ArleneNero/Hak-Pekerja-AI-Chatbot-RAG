@@ -58,39 +58,6 @@ chatRouter.post('/chat', optionalAuth, async (req: Request, res: Response, next:
     const topKNumber = typeof top_k === 'number' && top_k > 0 ? top_k : 10;
     const ragResponse = await ragClient.query(trimmedQuestion, topKNumber, req.id, conversationHistory);
 
-    // If authenticated user provided or requested conversation tracking:
-    if (req.user && conversationId) {
-      const now = new Date().toISOString();
-      const existing = await conversationService.getConversationDetail(req.user.uid, conversationId);
-      const messages = existing ? [...existing.messages] : [];
-
-      // Append user message
-      messages.push({
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: trimmedQuestion,
-        createdAt: now,
-      });
-
-      // Append assistant message
-      messages.push({
-        id: `asst-${Date.now()}`,
-        role: 'assistant',
-        content: ragResponse.answer,
-        createdAt: new Date().toISOString(),
-        sources: ragResponse.sources,
-        latencySeconds: ragResponse.latency_seconds,
-      });
-
-      await conversationService.saveConversation(
-        req.user.uid,
-        conversationId,
-        existing?.title || trimmedQuestion.slice(0, 45) + '...',
-        messages,
-        topic || existing?.topic
-      );
-    }
-
     res.json({
       status: ragResponse.status,
       answer: ragResponse.answer,

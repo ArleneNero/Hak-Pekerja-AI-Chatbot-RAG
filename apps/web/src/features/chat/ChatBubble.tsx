@@ -360,7 +360,12 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         {/* Assistant Header Metadata */}
         {!isUser && (
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
-            <ChatStatusBadge status={message.status} />
+            <ChatStatusBadge
+              status={
+                message.status ||
+                (message.sources && message.sources.length > 0 ? 'answered' : undefined)
+              }
+            />
             {message.latencySeconds !== undefined && (
               <span className="text-[11px] text-figma-muted flex items-center gap-1 font-mono">
                 <Clock size={12} />

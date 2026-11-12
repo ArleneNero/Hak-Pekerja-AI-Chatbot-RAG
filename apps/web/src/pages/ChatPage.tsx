@@ -12,6 +12,29 @@ import { ChatComposer } from '@/features/chat/ChatComposer';
 import { ROUTES } from '@/constants/routes';
 import type { ConversationDetail } from '@/types/history';
 
+// Helper to deduplicate consecutive identical messages, keeping richest metadata
+function deduplicateMessages(msgs: ChatMessage[]): ChatMessage[] {
+  if (!Array.isArray(msgs) || msgs.length === 0) return [];
+  const result: ChatMessage[] = [];
+  for (const m of msgs) {
+    if (!m || !m.content) continue;
+    const prev = result[result.length - 1];
+    if (prev && prev.role === m.role && prev.content.trim() === m.content.trim()) {
+      const merged: ChatMessage = {
+        ...prev,
+        ...m,
+        status: m.status || prev.status,
+        sources: (m.sources && m.sources.length > 0) ? m.sources : prev.sources,
+        latencySeconds: m.latencySeconds ?? prev.latencySeconds,
+      };
+      result[result.length - 1] = merged;
+      continue;
+    }
+    result.push(m);
+  }
+  return result;
+}
+
 export const ChatPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -73,7 +96,7 @@ export const ChatPage: React.FC = () => {
             if (detail) {
               setConversationId(detail.id);
               setConversationTitle(detail.title);
-              setMessages(detail.messages || []);
+              setMessages(deduplicateMessages(detail.messages || []));
             }
           } catch {
             // Keep current state on fetch failure
@@ -128,7 +151,7 @@ export const ChatPage: React.FC = () => {
         latencySeconds: response.latency_seconds || Number(elapsed.toFixed(2)),
       };
 
-      const finalMessages = [...updatedMessages, assistantMsg];
+      const finalMessages = deduplicateMessages([...updatedMessages, assistantMsg]);
       setMessages(finalMessages);
 
       if (user) {
@@ -146,9 +169,10 @@ export const ChatPage: React.FC = () => {
 
         await historyService.saveConversation(detail, user.uid, token);
 
+        // Kunci ID ini agar useEffect tidak memicu loadSavedSession lagi setelah AI menjawab
+        skipNextHistoryLoadRef.current = currentConvId;
+
         if (!conversationId) {
-          // Kunci ID ini agar useEffect tidak memicu loadSavedSession lagi setelah AI menjawab
-          skipNextHistoryLoadRef.current = currentConvId;
           setConversationId(currentConvId);
           setConversationTitle(title);
           setSearchParams({ id: currentConvId }, { replace: true });

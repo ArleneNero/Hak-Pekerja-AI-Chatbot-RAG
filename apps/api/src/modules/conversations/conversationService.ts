@@ -5,9 +5,10 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  createdAt: string;
+  createdAt: string | number;
   sources?: LegalSource[];
   latencySeconds?: number;
+  status?: string;
 }
 
 export interface ConversationDocument {
@@ -66,6 +67,30 @@ function cleanPlainSnippet(text?: string | null): string {
     .replace(/\*+/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// Helper to deduplicate messages with identical role and content, merging metadata (status, sources, latency)
+function deduplicateMessages(messages: ChatMessage[]): ChatMessage[] {
+  if (!Array.isArray(messages) || messages.length === 0) return [];
+  const deduplicated: ChatMessage[] = [];
+  for (const msg of messages) {
+    if (!msg || !msg.content) continue;
+    const prev = deduplicated[deduplicated.length - 1];
+    if (prev && prev.role === msg.role && prev.content.trim() === msg.content.trim()) {
+      // Merge: retain status, sources, and latency from whichever message has them
+      const merged: ChatMessage = {
+        ...prev,
+        ...msg,
+        status: msg.status || prev.status,
+        sources: (msg.sources && msg.sources.length > 0) ? msg.sources : prev.sources,
+        latencySeconds: msg.latencySeconds ?? prev.latencySeconds,
+      };
+      deduplicated[deduplicated.length - 1] = merged;
+      continue;
+    }
+    deduplicated.push(msg);
+  }
+  return deduplicated;
 }
 
 export class ConversationService {
@@ -130,7 +155,11 @@ export class ConversationService {
     const db = this.getDb();
     if (!db) {
       const conv = memoryStore.get(`${userId}:${conversationId}`);
-      return conv || null;
+      if (!conv) return null;
+      return {
+        ...conv,
+        messages: deduplicateMessages(conv.messages),
+      };
     }
 
     try {
@@ -140,7 +169,8 @@ export class ConversationService {
 
       const convData = doc.data() as ConversationDocument;
       const messagesSnapshot = await convRef.collection('messages').orderBy('createdAt', 'asc').get();
-      const messages = messagesSnapshot.docs.map((m: any) => m.data() as ChatMessage);
+      const rawMessages = messagesSnapshot.docs.map((m: any) => m.data() as ChatMessage);
+      const messages = deduplicateMessages(rawMessages);
 
       return {
         ...convData,
@@ -148,7 +178,12 @@ export class ConversationService {
       };
     } catch (error) {
       console.warn('[ConversationService] Firestore get error:', error);
-      return memoryStore.get(`${userId}:${conversationId}`) || null;
+      const conv = memoryStore.get(`${userId}:${conversationId}`);
+      if (!conv) return null;
+      return {
+        ...conv,
+        messages: deduplicateMessages(conv.messages),
+      };
     }
   }
 
@@ -159,8 +194,9 @@ export class ConversationService {
     messages: ChatMessage[],
     topic?: string
   ): Promise<ConversationDocument> {
+    const cleanMessages = deduplicateMessages(messages);
     const now = new Date().toISOString();
-    const rawLastMsg = messages[messages.length - 1]?.content || '';
+    const rawLastMsg = cleanMessages[cleanMessages.length - 1]?.content || '';
     const cleanLastMsg = cleanPlainSnippet(rawLastMsg);
     const cleanTitle = cleanPlainSnippet(title) || (cleanLastMsg.slice(0, 45) + '...');
 
@@ -170,14 +206,14 @@ export class ConversationService {
       title: cleanTitle,
       createdAt: now,
       updatedAt: now,
-      messageCount: messages.length,
+      messageCount: cleanMessages.length,
       lastMessage: cleanLastMsg,
       topic: topic || '',
     };
 
     const fullDetail: ConversationDetail = {
       ...summary,
-      messages,
+      messages: cleanMessages,
     };
 
     // Always keep memory cache in sync
@@ -193,7 +229,21 @@ export class ConversationService {
         // Save messages in subcollection batch
         const batch = db.batch();
         const messagesCol = convRef.collection('messages');
-        for (const msg of messages) {
+
+        // Delete orphaned documents (e.g. from previous double-saves) to clean Firestore permanently
+        try {
+          const existingSnapshot = await messagesCol.get();
+          const currentIds = new Set(cleanMessages.map((m) => m.id).filter(Boolean));
+          for (const existingDoc of existingSnapshot.docs) {
+            if (!currentIds.has(existingDoc.id)) {
+              batch.delete(existingDoc.ref);
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('[ConversationService] Error fetching existing messages to prune:', fetchErr);
+        }
+
+        for (const msg of cleanMessages) {
           const msgRef = messagesCol.doc(msg.id || `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`);
           const cleanMsg = sanitizeForFirestore(msg as any);
           batch.set(msgRef, cleanMsg);
