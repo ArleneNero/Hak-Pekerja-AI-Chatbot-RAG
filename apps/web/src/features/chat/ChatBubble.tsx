@@ -106,12 +106,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
   };
 
   /**
-   * Mengurai pesan menjadi blok paragraf atau blok tabel markdown yang rapi.
+   * Mengurai pesan menjadi blok paragraf, heading, pemisah (hr), blockquote, atau tabel markdown.
    */
-  interface ContentBlock {
-    type: 'text' | 'table';
-    content: string | string[][];
-  }
+  type ContentBlock =
+    | { type: 'heading'; level: number; content: string }
+    | { type: 'hr' }
+    | { type: 'quote'; content: string }
+    | { type: 'table'; content: string[][] }
+    | { type: 'text'; content: string };
 
   const parseBlocks = (raw: string): ContentBlock[] => {
     const lines = raw.split('\n');
@@ -119,11 +121,21 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
     let textBuffer: string[] = [];
     let i = 0;
 
+    const flushText = () => {
+      if (textBuffer.length > 0) {
+        const joined = textBuffer.join('\n').trim();
+        if (joined) {
+          blocks.push({ type: 'text', content: joined });
+        }
+        textBuffer = [];
+      }
+    };
+
     while (i < lines.length) {
       const line = lines[i];
       const trimmed = line.trim();
 
-      // Deteksi awal tabel markdown: baris dimulai dan diakhiri '|', dan baris berikutnya adalah separator (|---|---|)
+      // 1. Deteksi awal tabel markdown: baris dimulai dan diakhiri '|', dan baris berikutnya adalah separator (|---|---|)
       const hasPipes = trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 2;
       const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
       const isNextSeparator =
@@ -133,10 +145,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         nextLine.includes('---');
 
       if (hasPipes && isNextSeparator) {
-        if (textBuffer.length > 0) {
-          blocks.push({ type: 'text', content: textBuffer.join('\n') });
-          textBuffer = [];
-        }
+        flushText();
 
         const tableRows: string[][] = [];
         const headerCells = trimmed.slice(1, -1).split('|').map((c) => c.trim());
@@ -159,14 +168,45 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
         continue;
       }
 
+      // 2. Deteksi Heading markdown (#, ##, ###) — hilangkan tanda pagar dan jadikan heading terstruktur
+      const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+      if (headingMatch) {
+        flushText();
+        blocks.push({
+          type: 'heading',
+          level: headingMatch[1].length,
+          content: headingMatch[2].trim(),
+        });
+        i++;
+        continue;
+      }
+
+      // 3. Deteksi Garis Pemisah Horizontal (---, ***, atau ___ pada satu baris)
+      if (/^[-*_]{3,}$/.test(trimmed)) {
+        flushText();
+        blocks.push({ type: 'hr' });
+        i++;
+        continue;
+      }
+
+      // 4. Deteksi Blockquote (>) — ubah menjadi kotak kutipan/sorotan yang rapi
+      if (trimmed.startsWith('>')) {
+        flushText();
+        const quoteLines: string[] = [];
+        while (i < lines.length && lines[i].trim().startsWith('>')) {
+          quoteLines.push(lines[i].trim().replace(/^>\s*/, ''));
+          i++;
+        }
+        blocks.push({ type: 'quote', content: quoteLines.join('\n') });
+        continue;
+      }
+
+      // Teks biasa / baris list
       textBuffer.push(line);
       i++;
     }
 
-    if (textBuffer.length > 0) {
-      blocks.push({ type: 'text', content: textBuffer.join('\n') });
-    }
-
+    flushText();
     return blocks;
   };
 
@@ -175,13 +215,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
       return <div className="whitespace-pre-wrap">{content}</div>;
     }
 
-    // Bersihkan tag proses berpikir model penalaran (<think>...</think>)
-    // dan rapikan format markdown/sitasi yang terpecah
+    // Bersihkan tag proses berpikir model penalaran (<think>...</think>),
+    // perbaiki penanda bold yang pincang, dan standarisasi em-dash liar
     let cleanContent = (content || '')
       .replace(/<think>[\s\S]*?<\/think>/gi, '')
       .replace(/<think>[\s\S]*$/gi, '')
       .replace(/\s*\n+\s*(\[(?:Rujukan|S)\s*\d+[^\]]*\])/gi, ' $1')
       .replace(/^(\s*(?:\d+\.|\*|-)\s+)([^*\n]+)\*\*(?!\*)/gm, '$1**$2**')
+      .replace(/(\*\*[^*]+?\*\*)\s*[—–-]\s*/g, '$1: ')
       .trim();
 
     if (!cleanContent) {
@@ -193,8 +234,52 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
     return (
       <div className="space-y-3">
         {blocks.map((block, bIdx) => {
+          if (block.type === 'heading') {
+            const headingContent = renderInline(block.content, `hd-${bIdx}`);
+            if (block.level === 1) {
+              return (
+                <h2
+                  key={`hd-${bIdx}`}
+                  className="text-[16px] font-bold text-slate-900 tracking-tight mt-3 mb-1.5 pb-1 border-b border-slate-100"
+                >
+                  {headingContent}
+                </h2>
+              );
+            }
+            if (block.level === 2) {
+              return (
+                <h3
+                  key={`hd-${bIdx}`}
+                  className="text-[15px] font-bold text-slate-900 tracking-tight mt-2.5 mb-1"
+                >
+                  {headingContent}
+                </h3>
+              );
+            }
+            return (
+              <h4 key={`hd-${bIdx}`} className="text-[14px] font-semibold text-slate-900 mt-2 mb-1">
+                {headingContent}
+              </h4>
+            );
+          }
+
+          if (block.type === 'hr') {
+            return <hr key={`hr-${bIdx}`} className="border-t border-slate-200/80 my-3" />;
+          }
+
+          if (block.type === 'quote') {
+            return (
+              <div
+                key={`q-${bIdx}`}
+                className="border-l-3 border-[#315BF4] bg-blue-50/60 rounded-r-lg px-3.5 py-2 my-2 text-slate-700 text-[13px] leading-relaxed shadow-xs"
+              >
+                {renderInline(block.content, `qc-${bIdx}`)}
+              </div>
+            );
+          }
+
           if (block.type === 'table') {
-            const rows = block.content as string[][];
+            const rows = block.content;
             return (
               <div
                 key={`tbl-${bIdx}`}

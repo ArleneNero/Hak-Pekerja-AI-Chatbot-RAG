@@ -198,7 +198,7 @@ BATASAN PANJANG & FOKUS JAWABAN (SANGAT PENTING):
   1. Definisi & Sifat Hubungan Kerja (waktu tertentu vs bersifat tetap).
   2. Jangka Waktu Maksimal (maksimal 5 tahun vs tidak ada batas waktu).
   3. Uang Kompensasi / Pesangon saat hubungan kerja berakhir.
-- Gunakan format daftar poin berbutir (bullet points) yang rapi dengan judul poin dicetak tebal. JANGAN gunakan tabel markdown lebar.
+- Gunakan format daftar penomoran (1., 2.) atau poin berbutir (- ) dengan judul dicetak tebal diikuti titik dua: **[Judul Poin]**: [Penjelasan ringkas]. Hindari pemakaian tanda pisah em-dash (—) yang tidak konsisten. JANGAN gunakan tanda pagar heading (#, ##, ###) atau garis pemisah (---).
 - Pastikan jawaban selesai tuntas sampai kalimat penutup, jangan biarkan ada kalimat yang menggantung.
 
 Jika ada riwayat percakapan sebelumnya (misalnya pertanyaan lanjutan terkait masa kerja dan nominal gaji seperti perhitungan THR proporsional, uang kompensasi PKWT, atau pesangon PHK), gabungkan informasi tersebut secara koheren dan lakukan perhitungan matematis yang tepat sesuai ketentuan regulasi dalam bukti rujukan.

@@ -478,6 +478,18 @@ export async function executeRagQuery(
   // Rapikan penanda bold yang pincang di awal list (misal: "1. Uang Pesangon — 3 Bulan Upah**")
   cleanAnswer = cleanAnswer.replace(/^(\s*(?:\d+\.|\*|-)\s+)([^*\n]+)\*\*(?!\*)/gm, '$1**$2**');
 
+  // Bersihkan heading markdown (# atau ##) agar tidak memunculkan karakter tanda pagar mentah
+  cleanAnswer = cleanAnswer.replace(/^#{1,6}\s+(.+)$/gm, '**$1**');
+
+  // Bersihkan garis pemisah markdown mentah (--- atau ***) yang tampak kasar di UI
+  cleanAnswer = cleanAnswer.replace(/^\s*[-*_]{3,}\s*$/gm, '');
+
+  // Standarisasi em-dash / en-dash setelah judul poin menjadi titik dua yang bersih: "**Judul**: Penjelasan"
+  cleanAnswer = cleanAnswer.replace(/(\*\*[^*]+?\*\*)\s*[—–-]\s*/g, '$1: ');
+
+  // Rapikan spasi atau enter berlebih setelah pembersihan
+  cleanAnswer = cleanAnswer.replace(/\n{3,}/g, '\n\n').trim();
+
   // 9. Normalisasi & Penomoran Ulang Sitasi (Sequential Re-indexing):
   // Kita remap urutan kutipan yang muncul dalam teks bersih menjadi [Rujukan 1], [Rujukan 2], dst.
   const labelMap = new Map<string, number>();
