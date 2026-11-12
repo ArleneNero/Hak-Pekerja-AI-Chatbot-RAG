@@ -209,6 +209,9 @@ async function callChatCompletion(
       const data = (await res.json()) as any;
       const content = data.choices?.[0]?.message?.content;
       if (content) return content.trim();
+    } else {
+      const errText = await res.text();
+      console.warn(`[RAG Engine] Primary LLM (${config.chatModel}) HTTP ${res.status}: ${errText.slice(0, 150)}`);
     }
   } catch (e) {
     console.warn('[RAG Engine] Primary LLM failed, using fallback:', e);
@@ -456,17 +459,34 @@ export async function executeRagQuery(
   // 7. Panggil LLM
   const rawAnswer = await callChatCompletion(messages);
 
-  // 8. Normalisasi & Penomoran Ulang Sitasi (Sequential Re-indexing):
-  // Masalah sebelumnya: Jika candidate ada 10 (S1..S10) dan LLM hanya mengutip S1, S6, S7, S9,
-  // maka user melihat "4 rujukan" tapi labelnya ganjil sampai "S9", serta memakai huruf "S" teknis.
-  // Solusi: Kita remap urutan kutipan yang muncul dalam teks menjadi [Rujukan 1], [Rujukan 2], dst.
+  // 8. Sanitasi Output Model Penalaran (CoT / Reasoning):
+  // Hapus seluruh blok <think>...</think> (beserta unclosed tag jika terpotong)
+  // agar proses berpikir model tidak bocor ke pengguna maupun mencemari indeks sitasi.
+  let cleanAnswer = (rawAnswer || '')
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
+    .trim();
+
+  // Fallback jika jawaban hanya berupa blok <think> tanpa teks di luarnya
+  if (!cleanAnswer) {
+    cleanAnswer = (rawAnswer || '').replace(/<\/?think>/gi, '').trim();
+  }
+
+  // Rapikan sitasi yang terpisah baris baru (misal "\n[S1]" atau "\n[Rujukan 1]")
+  cleanAnswer = cleanAnswer.replace(/\s*\n+\s*(\[(?:Rujukan|S)\s*\d+[^\]]*\])/gi, ' $1');
+
+  // Rapikan penanda bold yang pincang di awal list (misal: "1. Uang Pesangon — 3 Bulan Upah**")
+  cleanAnswer = cleanAnswer.replace(/^(\s*(?:\d+\.|\*|-)\s+)([^*\n]+)\*\*(?!\*)/gm, '$1**$2**');
+
+  // 9. Normalisasi & Penomoran Ulang Sitasi (Sequential Re-indexing):
+  // Kita remap urutan kutipan yang muncul dalam teks bersih menjadi [Rujukan 1], [Rujukan 2], dst.
   const labelMap = new Map<string, number>();
   let nextCitationNumber = 1;
 
-  // Temukan semua sitasi dalam teks jawaban sesuai urutan kemunculannya
+  // Temukan semua sitasi dalam teks jawaban bersih sesuai urutan kemunculannya
   const citationRegex = /\[(?:Rujukan|S)\s*(\d+)([^\]]*)\]/gi;
   let match: RegExpExecArray | null;
-  while ((match = citationRegex.exec(rawAnswer)) !== null) {
+  while ((match = citationRegex.exec(cleanAnswer)) !== null) {
     const origKey = `S${match[1]}`;
     if (!labelMap.has(origKey)) {
       const candidateExists = candidateSources.some((c) => c.label === origKey);
@@ -478,7 +498,7 @@ export async function executeRagQuery(
   }
 
   let finalSources: LegalSourceDto[] = [];
-  let formattedAnswer = rawAnswer;
+  let formattedAnswer = cleanAnswer;
 
   if (labelMap.size > 0) {
     // 1. Susun finalSources berurutan: Rujukan 1, Rujukan 2, Rujukan 3, ...
@@ -493,7 +513,7 @@ export async function executeRagQuery(
     }
 
     // 2. Gantikan format teknis [S1], [S6] dsb. di dalam jawaban menjadi [Rujukan 1], [Rujukan 2]
-    formattedAnswer = rawAnswer.replace(/\[(?:Rujukan|S)\s*(\d+)([^\]]*)\]/gi, (fullMatch, num, extra) => {
+    formattedAnswer = cleanAnswer.replace(/\[(?:Rujukan|S)\s*(\d+)([^\]]*)\]/gi, (fullMatch, num, extra) => {
       const origKey = `S${num}`;
       const newNum = labelMap.get(origKey);
       if (newNum !== undefined) {

@@ -175,7 +175,20 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onOpenSources, 
       return <div className="whitespace-pre-wrap">{content}</div>;
     }
 
-    const blocks = parseBlocks(content);
+    // Bersihkan tag proses berpikir model penalaran (<think>...</think>)
+    // dan rapikan format markdown/sitasi yang terpecah
+    let cleanContent = (content || '')
+      .replace(/<think>[\s\S]*?<\/think>/gi, '')
+      .replace(/<think>[\s\S]*$/gi, '')
+      .replace(/\s*\n+\s*(\[(?:Rujukan|S)\s*\d+[^\]]*\])/gi, ' $1')
+      .replace(/^(\s*(?:\d+\.|\*|-)\s+)([^*\n]+)\*\*(?!\*)/gm, '$1**$2**')
+      .trim();
+
+    if (!cleanContent) {
+      cleanContent = (content || '').replace(/<\/?think>/gi, '').trim();
+    }
+
+    const blocks = parseBlocks(cleanContent);
 
     return (
       <div className="space-y-3">

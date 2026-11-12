@@ -41,6 +41,10 @@ class RagClient {
       }
     } catch (embeddedErr) {
       console.warn('[RagClient] Embedded RAG query error, trying remote fallback if configured:', embeddedErr);
+      // Di lingkungan serverless (Vercel) tanpa RAG backend eksternal terpisah, lempar error asli
+      if (config.isProduction && (!process.env.RAG_SERVICE_URL || config.ragServiceUrl.includes('127.0.0.1'))) {
+        throw embeddedErr;
+      }
     }
 
     // 2. Fallback jika ada service terpisah di RAG_SERVICE_URL

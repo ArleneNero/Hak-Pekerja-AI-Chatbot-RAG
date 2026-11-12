@@ -6,6 +6,9 @@ export function stripMarkdown(text?: string | null): string {
   if (!text) return '';
 
   return text
+    // 0. Hapus blok proses berpikir model penalaran (<think>...</think>)
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
     // 1. Hapus sitasi rujukan internal [Rujukan 1], [S1], dll
     .replace(/\[(?:Rujukan|S)\s*\d+[^\]]*\]/gi, '')
     // 2. Hapus tautan markdown: [teks](url) -> teks

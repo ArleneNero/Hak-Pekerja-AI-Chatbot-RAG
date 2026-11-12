@@ -48,10 +48,12 @@ function sanitizeForFirestore<T extends Record<string, any>>(obj: T): T {
   return result;
 }
 
-// Helper to strip markdown and citation markers from conversation title and lastMessage preview
+// Helper to strip markdown, thinking blocks, and citation markers from conversation title and lastMessage preview
 function cleanPlainSnippet(text?: string | null): string {
   if (!text) return '';
   return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
     .replace(/\[(?:Rujukan|S)\s*\d+[^\]]*\]/gi, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/(\*\*|__)(.*?)\1/g, '$2')
