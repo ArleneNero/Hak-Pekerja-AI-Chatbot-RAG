@@ -31,10 +31,10 @@ export const config = {
   qdrantApiKey: process.env.QDRANT_API_KEY || '',
   qdrantCollection: process.env.QDRANT_COLLECTION || 'hakpekerja_legal_4b4babc70203',
 
-  // Chat LLM (Bariska Cloud / OpenRouter)
-  chatBaseUrl: (process.env.CHAT_BASE_URL || 'https://api.bariska.cloud/v1').replace(/\/+$/, ''),
+  // Chat LLM (Apmix.AI / OpenRouter)
+  chatBaseUrl: (process.env.CHAT_BASE_URL || 'https://api.apmix.ai/v1').replace(/\/+$/, ''),
   chatApiKey: process.env.CHAT_API_KEY || '',
-  chatModel: process.env.CHAT_MODEL || 'deepseek-v4.1-flash',
+  chatModel: process.env.CHAT_MODEL || 'deepseek-v4.1-flash-1017-free',
 
   // Fallback Chat LLM
   chatFallbackBaseUrl: (process.env.CHAT_FALLBACK_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''),
